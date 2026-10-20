@@ -1,0 +1,6 @@
+# Los datos NUNCA se suben al repositorio
+plataforma-rrhh-copia-*.json
+plataforma-rrhh-datos.json
+*.backup.json
+.DS_Store
+Thumbs.db
