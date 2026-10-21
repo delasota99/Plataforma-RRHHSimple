@@ -21,6 +21,12 @@ const Ficus = (() => {
       'Si eliges un alta en curso, relleno los datos por ti y puedo marcar el paso en su checklist.',
       'Aquí nada se guarda: cierras la pantalla y los datos se van. Discreción de planta de interior.'
     ],
+    ausencias: [
+      'Aquí nunca va el diagnóstico: solo el tipo y las fechas. Lo que no se guarda no se puede filtrar.',
+      'Pon el último día previsto y te creo una tarea 5 días antes de la vuelta.',
+      'Si alguien ya ha vuelto, ábrelo y pulsa “Vuelve hoy”. Así no se queda en “sin confirmar”.',
+      'Las excedencias no generan vacaciones: ya lo resto yo en la calculadora.'
+    ],
     salarios: [
       'Mueve la barra de jornada y verás el salario a tiempo parcial al momento.',
       'Algunos puestos tienen categorías alternativas: depende de las funciones reales, no del nombre del puesto.',

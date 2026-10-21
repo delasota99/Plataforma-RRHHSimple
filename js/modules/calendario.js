@@ -11,7 +11,7 @@ const ModCalendario = (() => {
 
   const cfg = () => {
     const d = new Date();
-    return Object.assign({ capas: ['madrid'], empresa: true, tareas: true, vista: 'mes', anio: d.getFullYear(), mes: d.getMonth(), sel: hoyISO() }, Datos.get('calendario', {}));
+    return Object.assign({ capas: ['madrid'], empresa: true, tareas: true, ausencias: true, vista: 'mes', anio: d.getFullYear(), mes: d.getMonth(), sel: hoyISO() }, Datos.get('calendario', {}));
   };
   const setCfg = c => Datos.set('calendario', c);
   const empresa = () => Datos.get('festivosEmpresa', []);
@@ -22,7 +22,20 @@ const ModCalendario = (() => {
     const fest = MotorFestivos.delAnio(P.festivos, c.anio, c.capas, c.empresa ? empresa() : []);
     const tareas = new Map();
     if (c.tareas) Tareas.todas().filter(t => t.fecha.startsWith(c.anio + '-')).forEach(t => { if (!tareas.has(t.fecha)) tareas.set(t.fecha, []); tareas.get(t.fecha).push(t); });
-    return { fest, tareas };
+    return { fest, tareas, aus: c.ausencias ? ausenciasDelAnio(c.anio) : new Map() };
+  }
+  /* Ausencias por día. Con la base desbloqueada, con nombre y tipo; bloqueada, solo "Ausencia". */
+  function ausenciasDelAnio(anio) {
+    const m = new Map(), hoy = hoyISO(), ini = `${anio}-01-01`, fin = `${anio}-12-31`;
+    const abierta = Empleados.desbloqueado;
+    const lista = abierta
+      ? Ausencias.todas().filter(a => Ausencias.tipo(a.tipo).ausencia !== false).map(a => { const t = Ausencias.tipo(a.tipo), n = (a.empleado || '').split(' '); return { id: a.id, desde: a.desde, hasta: MotorAusencias.finEfectivo(a, hoy), corto: `${n[0]} ${n[1] ? n[1][0] + '.' : ''}`.trim(), nombre: a.empleado, tipo: t.nombre, color: t.color }; })
+      : Ausencias.publico().map(a => ({ id: a.id, desde: a.desde, hasta: a.hasta || (hoy > a.desde ? hoy : a.desde), corto: 'Ausencia', nombre: 'Ausencia', tipo: '', color: 'var(--brand-2)' }));
+    lista.forEach(a => {
+      let d = a.desde < ini ? ini : a.desde; const h = a.hasta > fin ? fin : a.hasta;
+      while (d <= h) { if (!m.has(d)) m.set(d, []); m.get(d).push(a); d = MotorAusencias.sumar(d, 1); }
+    });
+    return m;
   }
   const iso = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   const lunes0 = (y, m) => (new Date(Date.UTC(y, m, 1)).getUTCDay() + 6) % 7;     // 0 = lunes
@@ -34,13 +47,13 @@ const ModCalendario = (() => {
     let celdas = '';
     for (let i = 0; i < off; i++) celdas += '<div class="cd vacio" aria-hidden="true"></div>';
     for (let d = 1; d <= n; d++) {
-      const f = iso(c.anio, c.mes, d), fs = D.fest.get(f) || [], ts = (D.tareas.get(f) || []).filter(t => !t.hecha), dow = (off + d - 1) % 7;
+      const f = iso(c.anio, c.mes, d), fs = D.fest.get(f) || [], ts = (D.tareas.get(f) || []).filter(t => !t.hecha), as = D.aus.get(f) || [], dow = (off + d - 1) % 7;
       const etiquetas = fs.slice(0, 2).map(x => `<span class="ev tag-${x.capa}" title="${esc(x.nombre)} · ${etiquetaCapa(x.capa, x.ambito)}">${esc(x.nombre)}</span>`).join('') + (fs.length > 2 ? `<span class="ev more">+${fs.length - 2}</span>` : '');
-      const puntos = fs.map(x => `<i class="dot tag-${x.capa}"></i>`).join('');
+      const puntos = fs.map(x => `<i class="dot tag-${x.capa}"></i>`).join('') + ((D.aus.get(f) || []).length ? `<i class="dot" style="--c:${D.aus.get(f)[0].color}"></i>` : '');
       const aria = `${d} de ${MESES[c.mes].toLowerCase()}${fs.length ? ': ' + fs.map(x => x.nombre).join(', ') : ''}${ts.length ? `, ${ts.length} tarea${ts.length > 1 ? 's' : ''}` : ''}`;
       celdas += `<button class="cd${dow > 4 ? ' finde' : ''}${fs.length ? ' fest' : ''}${f === hoy ? ' hoy' : ''}${f === c.sel ? ' sel' : ''}" data-f="${f}" aria-label="${esc(aria)}" aria-pressed="${f === c.sel}">
         <span class="num">${d}</span>${ts.length ? `<span class="tcount" title="${ts.length} tarea(s)">${ts.length}</span>` : ''}
-        <span class="evs">${etiquetas}</span><span class="dots">${puntos}</span></button>`;
+        <span class="evs">${etiquetas}${as.length ? `<span class="ev aus" style="--tc:${as[0].color}" title="${esc(as.map(x => x.nombre + (x.tipo ? ' · ' + x.tipo : '')).join(', '))}">${as.length > 1 ? `${as.length} ausencias` : esc(as[0].corto)}</span>` : ''}</span><span class="dots">${puntos}</span></button>`;
     }
     return `<div class="mes-nav"><button class="icon-btn" data-nav="-1" aria-label="Mes anterior"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
       <h2>${MESES[c.mes]} ${c.anio}</h2><button class="icon-btn" data-nav="1" aria-label="Mes siguiente"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -79,6 +92,7 @@ const ModCalendario = (() => {
     return `<div class="card dia-panel">
       <div class="dp-h"><div class="cal lg"><small>${Fecha.mesCorto(t)}</small><b>${new Date(t).getUTCDate()}</b></div><div><b class="dp-dia">${Fecha.diaSemana(t)}</b><span class="muted">${Fecha.larga(t)}</span></div></div>
       ${fs.length ? `<ul class="dp-list">${fs.map(x => `<li><span class="chip-c tag-${x.capa}">${etiquetaCapa(x.capa, x.ambito)}</span>${esc(x.nombre)}</li>`).join('')}</ul>` : '<p class="muted small">Día laborable (con las capas activas).</p>'}
+      ${c.ausencias && (D.aus.get(f) || []).length ? `<h4>Ausencias</h4><ul class="dp-aus">${D.aus.get(f).map(x => `<li style="--tc:${x.color}"><i></i>${Empleados.desbloqueado ? `<button class="linkbtn" data-aus-dia="${x.id}">${esc(x.nombre)}</button><span class="muted small">${esc(x.tipo)}</span>` : 'Ausencia <span class="muted small">(desbloquea Empleados para ver quién)</span>'}</li>`).join('')}</ul>` : ''}
       ${c.tareas ? `<h4>Tareas</h4>${ts.length ? `<ul class="dp-tasks">${ts.map(x => `<li class="${x.hecha ? 'done' : ''}"><i class="est ${x.estado}" title="${Tareas.ESTADO[x.estado]}"></i><i class="prio ${x.prioridad}"></i><button class="linkbtn" data-tarea="${x.id}">${esc(x.titulo)}</button></li>`).join('')}</ul>` : '<p class="muted small">Sin tareas.</p>'}` : ''}
       <div class="dp-acts"><button class="btn sm" data-tarea-dia>+ Tarea este día</button>
       ${emp ? `<button class="btn ghost sm" data-quitar-emp>Quitar festivo de empresa</button>` : `<button class="btn ghost sm" data-add-emp>Marcar festivo de empresa</button>`}</div>
@@ -113,6 +127,7 @@ const ModCalendario = (() => {
         <span class="layer fixed tag-nac"><i></i>Nacionales</span>${capasBtn}
         <button class="layer tag-empresa" data-emp aria-pressed="${c.empresa}"><i></i>Empresa</button>
         <button class="layer tag-tarea" data-tar aria-pressed="${c.tareas}"><i></i>Tareas</button>
+        <button class="layer tag-aus" data-aus aria-pressed="${c.ausencias}"><i></i>Ausencias${c.ausencias && !Empleados.desbloqueado && Empleados.configurado() ? ' (sin nombres)' : ''}</button>
       </div>
       ${sinDatos ? `<div class="note warn">${icon('info')}<div>No hay calendario oficial cargado para ${c.anio}. Solo se muestran tus festivos de empresa y tareas.</div></div>` : localPend ? `<div class="note">${icon('info')}<div>Los festivos locales de ${c.anio} aún no están publicados para alguna de las capas activas.</div></div>` : ''}
       <div class="cal-layout${c.vista === 'mes' ? '' : ' full'}">
@@ -131,6 +146,8 @@ const ModCalendario = (() => {
     $$('[data-capa]', main).forEach(b => b.onclick = () => { const c = cfg(), k = b.dataset.capa; upd({ capas: c.capas.includes(k) ? c.capas.filter(x => x !== k) : [...c.capas, k] }); });
     $('[data-emp]', main).onclick = () => upd({ empresa: !cfg().empresa });
     $('[data-tar]', main).onclick = () => upd({ tareas: !cfg().tareas });
+    $('[data-aus]', main).onclick = () => upd({ ausencias: !cfg().ausencias });
+    $$('[data-aus-dia]', main).forEach(b => b.onclick = () => ModAusencias.abrir(Number(b.dataset.ausDia)));
     $$('[data-nav]', main).forEach(b => b.onclick = () => { const c = cfg(); let m = c.mes + Number(b.dataset.nav), y = c.anio; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } upd({ mes: m, anio: y }); });
     $$('[data-navy]', main).forEach(b => b.onclick = () => upd({ anio: cfg().anio + Number(b.dataset.navy) }));
     $('[data-hoy]', main) && ($('[data-hoy]', main).onclick = () => { const d = new Date(); upd({ anio: d.getFullYear(), mes: d.getMonth(), sel: hoyISO() }); });

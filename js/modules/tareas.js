@@ -35,9 +35,9 @@ const ModTareas = (() => {
       ${botonEstado(t)}
       <i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i>
       <button class="tt tt-btn" data-edit>${esc(t.titulo)}${t.nota ? `<span class="nota">${esc(t.nota)}</span>` : ''}
-        <small class="${vencida(t) ? 'late-txt' : ''}">${t.altaId ? '<span class="tag">alta</span> ' : ''}${cuando(t.fecha)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}${t.hecha && t.hechaEl ? ' · terminada el ' + new Date(t.hechaEl).toLocaleDateString('es-ES') : ''}</small></button>
+        <small class="${vencida(t) ? 'late-txt' : ''}">${t.altaId ? '<span class="tag">alta</span> ' : ''}${t.ausenciaId ? '<span class="tag">ausencia</span> ' : ''}${cuando(t.fecha)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}${t.hecha && t.hechaEl ? ' · terminada el ' + new Date(t.hechaEl).toLocaleDateString('es-ES') : ''}</small></button>
       <span class="row-acts">
-        ${t.altaId ? `<button class="icon-act" data-alta="${t.altaId}" aria-label="Ver el alta" title="Ver el alta">${icon('altas')}</button>` : ''}
+        ${t.altaId ? `<button class="icon-act" data-alta="${t.altaId}" aria-label="Ver el alta" title="Ver el alta">${icon('altas')}</button>` : ''}${t.ausenciaId ? `<button class="icon-act" data-aus-t aria-label="Ver la ausencia" title="Ver la ausencia">${icon('ausencias')}</button>` : ''}
         <button class="icon-act" data-edit aria-label="Editar ${esc(t.titulo)}" title="Editar">${ICO.editar}</button>
         ${t.hecha || !t.fecha ? '' : `<button class="icon-act" data-ics aria-label="Añadir ${esc(t.titulo)} a mi calendario" title="Añadir a mi calendario (.ics)">${ICO.cal}</button>`}
         <button class="icon-act" data-del aria-label="Eliminar ${esc(t.titulo)}" title="Eliminar">${ICO.borrar}</button>
@@ -152,6 +152,7 @@ const ModTareas = (() => {
         const id = Number(li.dataset.id), t = buscar(id); if (!t) return;
         if (e.target.closest('[data-st]')) cambiar(main, id);
         else if (e.target.closest('[data-alta]')) { ModAltas.abrir(t.altaId); location.hash = '#altas'; }
+        else if (e.target.closest('[data-aus-t]')) ModAusencias.abrir(t.ausenciaId);
         else if (e.target.closest('[data-del]')) { li.classList.add('saliendo'); setTimeout(() => Tareas.borrarConDeshacer(id), reduceMotion ? 0 : 200); }
         else if (e.target.closest('[data-ics]')) Tareas.descargarIcs([t], 'tarea-' + norm(t.titulo).replace(/[^a-z0-9]+/g, '-').slice(0, 40));
         else if (e.target.closest('[data-edit]')) Tareas.abrir({ tarea: t });

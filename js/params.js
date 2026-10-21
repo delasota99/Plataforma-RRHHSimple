@@ -208,6 +208,40 @@ window.RRHH_PARAMS = {
     verificado: '2026-10-21'
   },
 
+  /* AUSENCIAS: seguimiento (fase 6). Se guardan dentro de la base cifrada de empleados (nunca el diagnóstico).
+     ausencia:false → no cuenta como "ausente" (p. ej. reducción de jornada). sinDevengo → no genera vacaciones. */
+  ausencias: {
+    avisoDias: 5,                    // tarea automática de reincorporación, días antes de la vuelta prevista
+    tipos: [
+      { id:'it', nombre:'Baja médica (IT)', color:'#b4532a', nomina:true, ausencia:true,
+        subtipos:['Enfermedad común', 'Accidente no laboral', 'Accidente de trabajo', 'Enfermedad profesional'],
+        acciones:['Comunicar la baja a la gestoría para la nómina', 'Aplicar el complemento de IT del convenio (art. 44)', 'Recibir el alta y confirmar la fecha de vuelta'],
+        nota:'Complemento del convenio (art. 44): contingencias comunes, 75 % los días 1-20 (o 1-3 si dura más de 30) y 100 % después; hospitalización, 100 % desde el primer día; accidente de trabajo o enfermedad profesional, 100 % desde el primer día. Sobre la base de cotización sin prorrata de pagas.' },
+      { id:'nacimiento', nombre:'Nacimiento y cuidado del menor', color:'#6f8f2f', nomina:true, ausencia:true,
+        subtipos:['Semanas obligatorias', 'Semanas voluntarias', 'Semanas hasta los 8 años', 'Lactancia acumulada'],
+        acciones:['Comunicar a la gestoría la suspensión del contrato', 'Anotar las fechas de cada tramo', 'Confirmar la vuelta'],
+        nota:'Prestación de la Seguridad Social al 100 % de la base reguladora. La lactancia acumulada (14 días laborables) es retribuida por la empresa.' },
+      { id:'parental', nombre:'Permiso parental', color:'#8a6fb0', nomina:true, ausencia:true,
+        acciones:['Comunicar a la gestoría: no retribuido (suspensión del contrato)', 'Confirmar la vuelta'],
+        nota:'Hasta 8 semanas por hijo hasta los 8 años (ET 48 bis). Preaviso de 10 días.' },
+      { id:'excedencia', nombre:'Excedencia', color:'#3f6f8f', nomina:true, ausencia:true, sinDevengo:true,
+        subtipos:['Voluntaria', 'Cuidado de hijos', 'Cuidado de familiares', 'Forzosa'],
+        acciones:['Tramitar la baja en la Seguridad Social', 'Comunicar a la gestoría', 'Anotar la reserva de puesto y la fecha límite para pedir el reingreso', 'Gestionar el reingreso'],
+        nota:'Convenio art. 13: la voluntaria, de 4 meses a 5 años, y el reingreso debe pedirse con 2 meses de antelación. Por cuidado de hijos (hasta 3 años): reserva del puesto el primer año (15 o 18 meses en familia numerosa) y computa para la antigüedad.' },
+      { id:'reduccion', nombre:'Reducción de jornada', color:'#c98a2a', nomina:true, ausencia:false, conPorcentaje:true,
+        subtipos:['Guarda legal (menor de 12 años)', 'Cuidado de familiar', 'Menor con enfermedad grave', 'Otra'],
+        acciones:['Comunicar el nuevo porcentaje a la gestoría', 'Actualizar el horario', 'Avisar a la gestoría cuando termine'],
+        nota:'No es una ausencia: la persona trabaja con jornada reducida. Entre 1/8 y la mitad (ET 37.6), con reducción proporcional del salario.' },
+      { id:'permiso', nombre:'Permiso retribuido de varios días', color:'#8a8666', nomina:false, ausencia:true,
+        subtipos:['Matrimonio', 'Hospitalización o enfermedad grave de un familiar', 'Fallecimiento de un familiar', 'Traslado de domicilio', 'Otro'],
+        acciones:['Confirmar la vuelta'], nota:'Retribuido: no afecta a la nómina.' },
+      { id:'noRetribuido', nombre:'Permiso no retribuido', color:'#5e5b47', nomina:true, ausencia:true, sinDevengo:true,
+        subtipos:['Asuntos propios (convenio 14.3)', 'Licencia sin sueldo', 'Otro'],
+        acciones:['Comunicar a la gestoría el descuento', 'Confirmar la vuelta'], nota:'No retribuido: se descuenta en la nómina y no genera vacaciones.' },
+      { id:'otra', nombre:'Otra ausencia', color:'#7a7a7a', nomina:false, ausencia:true, acciones:['Confirmar la vuelta'] }
+    ]
+  },
+
   /*
    * FESTIVOS. Cada año: nacionales comunes + capas (comunidad + municipio).
    * En cada capa, "dias" es la lista completa de la comunidad tal como la publica su boletín;

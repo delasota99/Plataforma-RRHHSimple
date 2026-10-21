@@ -141,10 +141,11 @@ const ModEmpleados = (() => {
         <p class="form-err" id="fErr" role="alert"></p>
       </div>
       <div class="dlg-f">
-        ${id ? '<button type="button" class="btn ghost danger" id="fDel" style="margin-right:auto">Eliminar</button><button type="button" class="btn ghost" id="fVacBtn">Calcular vacaciones</button>' : ''}
+        ${id ? `<button type="button" class="btn ghost danger" id="fDel" style="margin-right:auto">Eliminar</button><button type="button" class="btn ghost" id="fAusBtn">Ausencias${(e.ausencias || []).length ? ` (${e.ausencias.length})` : ''}</button><button type="button" class="btn ghost" id="fVacBtn">Calcular vacaciones</button>` : ''}
         <button type="button" class="btn ghost" id="fCancel">Cancelar</button><button class="btn">${id ? 'Guardar' : 'Crear empleado'}</button>
       </div></form>`, { ancho: 640 });
     $('#fCancel', d).onclick = () => d.close('cancel');
+    $('#fAusBtn', d) && ($('#fAusBtn', d).onclick = () => { d.close('cancel'); ModAusencias.deEmpleado(id); });
     $('#fForm', d).onsubmit = async ev => {
       ev.preventDefault();
       const sal = MotorEmpleados.importe($('#fSal', d).value);

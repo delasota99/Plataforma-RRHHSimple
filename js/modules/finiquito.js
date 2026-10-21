@@ -1,7 +1,7 @@
 /* Finiquito (liquidación) con indemnización opcional. Motores: finiquito.js, vacaciones.js, indemnizacion.js */
 const ModFiniquito = (() => {
   const P = window.RRHH_PARAMS;
-  let voluntaria = false;
+  let voluntaria = false, empSel = null;
   const cfg = () => ({ pagasExtra: P.pagasExtra, vacaciones: { diasLaborables: P.vacaciones.diasLaborables } });
 
   function render(main) {
@@ -41,7 +41,7 @@ const ModFiniquito = (() => {
     $('#fF').addEventListener('input', pintar);
     $('#fSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; voluntaria = b.dataset.v === '1'; $$('#fSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); $('#fSeg .thumb').style.transform = voluntaria ? 'translateX(100%)' : 'none'; $('#fVol').hidden = !voluntaria; $('#fIndBox').hidden = voluntaria; pintar(); };
     Calc.empleado($('#fEmp'), e => {
-      if (!e) return;
+      empSel = e; if (!e) return;
       $('#fIni').value = e.fechaContratacion || ''; if (e.fechaBaja) $('#fFin').value = e.fechaBaja;
       $('#fSal').value = e.salario ? String(e.salario).replace('.', ',') : '';
       const anio = ($('#fFin').value || Calc.hoyISO()).slice(0, 4); $('#fCons').value = e.vacaciones?.[anio] ?? 0;
@@ -57,7 +57,8 @@ const ModFiniquito = (() => {
     const listo = ini && fin && sal > 0;
     $('#fVacio').hidden = listo; out.hidden = !listo; if (!listo) return;
     // Vacaciones pendientes a la fecha de baja.
-    const v = MotorVacaciones.calcular({ inicio: ini, anio: Number(fin.slice(0, 4)), fin, hoy: fin, consumidos: Calc.ent($('#fCons').value), pendAnterior: Calc.ent($('#fPrev').value), diasConvenio: P.vacaciones.diasLaborables });
+    const sinDev = empSel ? Ausencias.sinDevengo(empSel, Number(fin.slice(0, 4)), fin) : 0;
+    const v = MotorVacaciones.calcular({ inicio: ini, anio: Number(fin.slice(0, 4)), fin, hoy: fin, consumidos: Calc.ent($('#fCons').value), pendAnterior: Calc.ent($('#fPrev').value), sinDevengo: sinDev, diasConvenio: P.vacaciones.diasLaborables });
     const catId = $('#fCat').value, pre = MotorFiniquito.preavisoDe(catId, P.preavisoBajaVoluntaria);
     $('#fPreTxt').textContent = voluntaria ? (pre ? `Preaviso exigido: ${pre.texto}.` : 'Elige la categoría para saber el preaviso exigido.') : '';
     const tipoInd = voluntaria ? '' : $('#fInd').value;
@@ -68,7 +69,7 @@ const ModFiniquito = (() => {
     out.innerHTML = `
       <div class="big">
         <div class="stat hl"><small>${ind ? 'Total a percibir' : 'Finiquito'}</small><b class="eur">${euros(r.total)}</b><span class="sub">${ind ? `Finiquito ${euros(r.finiquito)} + indemnización` : 'Importe bruto'}</span></div>
-        <div class="stat"><small>Vacaciones pendientes</small><b>${v ? v.pendFin : 0}<em>${v && Math.abs(v.pendFin) === 1 ? 'día' : 'días'}</em></b><span class="sub">${v ? `${v.genFin} generados + ${Calc.ent($('#fPrev').value)} anteriores − ${Calc.ent($('#fCons').value)} disfrutados` : ''}</span></div>
+        <div class="stat"><small>Vacaciones pendientes</small><b>${v ? v.pendFin : 0}<em>${v && Math.abs(v.pendFin) === 1 ? 'día' : 'días'}</em></b><span class="sub">${v ? `${v.genFin} generados + ${Calc.ent($('#fPrev').value)} anteriores − ${Calc.ent($('#fCons').value)} disfrutados${sinDev ? ` · ${sinDev} días sin devengo` : ''}` : ''}</span></div>
         <div class="stat"><small>Paga · salario diario</small><b class="eur sm">${euros(r.paga)}</b><span class="sub">${euros(r.salarioDiario)} al día</span></div>
       </div>
       <div class="card"><div class="card-h"><h3>Liquidación</h3><span class="ex">Baja el ${Calc.f(fin)}</span></div>

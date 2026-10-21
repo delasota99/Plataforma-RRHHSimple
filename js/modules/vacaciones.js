@@ -136,6 +136,7 @@ const ModVacaciones = (() => {
       const e = Empleados.buscar(Number(sel.value)); if (!e) return;
       const anio = Number($('#v-anio').value) || new Date().getFullYear();
       $('#v-ini').value = e.fechaContratacion || ''; $('#v-fin').value = e.fechaBaja || ''; $('#v-cons').value = e.vacaciones?.[anio] ?? 0;
+      const sd = Ausencias.sinDevengo(e, anio); $('#v-sin').value = sd; if (sd) { $('details.opt').open = true; toast(`${sd} días sin devengo por excedencias o permisos no retribuidos`); }
       $('#empCard').innerHTML = `<span class="avatar">${esc(((e.nombre[0] || '') + (e.apellido1[0] || '')).toUpperCase())}</span><span>${esc(e.departamento || '—')} · ${esc(e.centro || '—')}<span class="meta">Contratación ${e.fechaContratacion ? Fecha.larga(Fecha.parse(e.fechaContratacion)) : '—'}${e.fechaBaja ? ' · baja ' + Fecha.larga(Fecha.parse(e.fechaBaja)) : ''}</span></span>`;
       update();
     };

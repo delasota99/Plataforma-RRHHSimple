@@ -36,7 +36,7 @@ js/params.js            ÚNICO archivo de parámetros legales (convenio, tablas,
 js/engines/             Motores de cálculo: funciones puras, sin interfaz, con pruebas
 js/core/                Estructura común: datos y copias, tareas, asistente Ficus, navegación
 js/modules/             Pantallas (inicio, vacaciones, ajustes…)
-tests/                  Pruebas de los motores: node tests/<nombre>.test.js (vacaciones, tareas, festivos, altas_empleados, documentos, calculadoras)
+tests/                  Pruebas de los motores: node tests/<nombre>.test.js (vacaciones, tareas, festivos, altas_empleados, documentos, calculadoras, ausencias)
 docs/                   Licencias de las tipografías
 ```
 
@@ -53,3 +53,6 @@ Convenio colectivo estatal de industrias de alimentos compuestos para animales (
 | 3. Personas | Empleados cifrados con contraseña (importar CSV, filtros, fichas) y seguimiento de altas (checklist por centro, tareas automáticas, cierre → ficha) | ✅ |
 | 4. Documentos | Generador con las 6 plantillas (correo y carta de oferta, documentación, bienvenida, emergencias, aviso a PRL y Calidad) | ✅ Hecha |
 | 5. Calculadoras | Salarios, permisos (convenio frente a ET y reducción de jornada), nacimiento, indemnización y finiquito | ✅ Hecha |
+| 6. Ausencias | Bajas, nacimiento, excedencias, reducciones y permisos largos: cifradas, aviso de reincorporación, capa en el calendario | ✅ Hecha |
+| 7. Informes | Exportar a Excel y PDF (plantilla, altas, ausencias…) | Pendiente |
+| 8. Personas | Sección que agrupa lo existente | Pendiente |
