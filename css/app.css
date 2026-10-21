@@ -1001,3 +1001,21 @@ main[data-anim] .aus-card{animation:enter 320ms var(--ease-out) both;animation-d
 .pf-cambio{font-size:14px;text-align:right}
 @media (max-width:760px){.sel-add{grid-template-columns:1fr 1fr}.sel-add .btn{grid-column:1/-1}.pro-feed li{flex-wrap:wrap}.pf-cambio{width:100%;text-align:left;padding-left:48px}.vac-nums b{font-size:18px}}
 .imp-h{font-size:14px;font-weight:600;margin:14px 0 6px}
+/* Ficha del empleado: accesos en una fila de chips (en vez de botones en el pie) */
+.ficha-acc{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 16px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.acc-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-family:var(--font-d);font-size:13px;font-weight:500;transition:border-color 160ms ease,background-color 160ms ease,transform 120ms var(--ease-out)}
+.acc-chip svg{width:15px;height:15px;color:var(--brand)}
+.acc-chip b{font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--surface-2)}
+.acc-chip b.on{background:var(--accent);color:var(--on-accent)}
+.acc-chip:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.acc-chip:hover{border-color:var(--brand);background:var(--surface-2)}}
+@media (max-width:520px){.icon-only-sm span{display:none}}
+/* Tabla de empleados: columnas ordenables */
+.th-sort{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap}
+.th-sort svg{width:13px;height:13px;opacity:.35;transition:opacity 160ms ease,transform 200ms var(--ease-out)}
+th[aria-sort=ascending] .th-sort,th[aria-sort=descending] .th-sort{color:var(--text);font-weight:600}
+th[aria-sort=ascending] .th-sort svg,th[aria-sort=descending] .th-sort svg{opacity:1}
+th[aria-sort=ascending] .th-sort svg path{d:path("M8 14l4-4 4 4")}
+th[aria-sort=descending] .th-sort svg path{d:path("M8 10l4 4 4-4")}
+th.num .th-sort{flex-direction:row-reverse}
+@media (hover:hover) and (pointer:fine){.th-sort:hover{color:var(--text)}.th-sort:hover svg{opacity:.8}}

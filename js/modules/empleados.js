@@ -4,7 +4,17 @@
  */
 const ModEmpleados = (() => {
   const P = window.RRHH_PARAMS;
-  let f = { q: '', centro: '', departamento: '', responsable: '', sexo: '', estado: 'activos' }, pendienteAbrir = null;
+  let f = { q: '', centro: '', departamento: '', responsable: '', sexo: '', estado: 'activos' }, orden = { col: 'nombre', dir: 1 };
+  const COLS = [['nombre', 'Empleado'], ['departamento', 'Departamento'], ['responsable', 'Responsable'], ['centro', 'Centro'], ['puesto', 'Puesto'], ['fechaContratacion', 'Contratación'], ['salario', 'Salario anual']];
+  /* Ordena la lista por la columna elegida (vacíos siempre al final). Por defecto, apellidos. */
+  function ordenar(l) {
+    if (orden.col === 'nombre') return orden.dir > 0 ? l : [...l].reverse();
+    const k = orden.col, vacio = v => v === '' || v == null;
+    return [...l].sort((a, b) => { const x = a[k], y = b[k];
+      if (vacio(x) || vacio(y)) return vacio(x) - vacio(y);
+      return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'es')) * orden.dir; });
+  }
+  let pendienteAbrir = null;
   const hoy = () => Fecha.iso(Fecha.hoy());
   const antig = fc => { if (!fc) return ''; const d = Fecha.parse(fc), a = (Fecha.hoy() - d) / (365.25 * DAY); return a < 1 ? `${Math.max(0, Math.floor(a * 12))} meses` : `${Math.floor(a)} año${Math.floor(a) === 1 ? '' : 's'}`; };
   const ini = n => (n || '?').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -65,7 +75,7 @@ const ModEmpleados = (() => {
   function render(main) {
     if (!Empleados.configurado()) return pantallaCrear(main);
     if (!Empleados.desbloqueado) return pantallaBloqueada(main);
-    const todos = Empleados.todos(), act = todos.filter(e => MotorEmpleados.activo(e, hoy()));
+    const todos = Empleados.todos();
     const sel = (id, campo, label) => `<label class="sel"><span class="sr">${label}</span><select id="${id}"><option value="">${label}: todos</option>${MotorEmpleados.valores(todos, campo).map(v => `<option ${f[campo] === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`;
     main.innerHTML = `<div class="view">
       <div class="page-h page-h-row"><div><a class="crumb" href="#inicio">← Inicio</a><h1>Empleados</h1><p>Datos básicos para calcular y filtrar. Cifrados con tu contraseña.</p></div>
@@ -75,28 +85,27 @@ const ModEmpleados = (() => {
           <button class="btn ghost" id="expBtn">${ICO.bajar}Exportar</button>
           <button class="btn" id="nuevo">${ICO.mas}Nuevo empleado</button>
         </div></div>
-      <div class="kpis">
-        <div class="kpi"><b>${act.length}</b><span>activos</span></div>
-        ${P.centros.map(c => `<div class="kpi"><b>${act.filter(e => e.centro === c).length}</b><span>${esc(c)}</span></div>`).join('')}
-        <div class="kpi"><b>${todos.length - act.length}</b><span>bajas</span></div>
-        <div class="kpi"><b>${act.filter(e => e.sexo === 'mujer').length} · ${act.filter(e => e.sexo === 'hombre').length}</b><span>mujeres · hombres</span></div>
-      </div>
-      ${todos.some(e => !e.sexo) ? `<div class="note warn" style="margin-bottom:16px">${icon('info')}<div><b>${todos.filter(e => !e.sexo).length} fichas sin sexo.</b> Los informes de igualdad lo necesitan. <button class="linkbtn" id="verSinSexo">Ver cuáles</button></div></div>` : ''}
+      ${todos.some(e => !e.sexo) ? `<div class="note warn" style="margin-bottom:16px">${icon('info')}<div><b>${todos.filter(e => !e.sexo).length === 1 ? '1 ficha' : `${todos.filter(e => !e.sexo).length} fichas`} sin sexo.</b> Los informes de igualdad lo necesitan. <button class="linkbtn" id="verSinSexo">Ver cuáles</button></div></div>` : ''}
       <div class="toolbar">
         <div class="seg3" role="group" aria-label="Situación">${[['activos', 'Activos'], ['bajas', 'Bajas'], ['todos', 'Todos']].map(([k, l]) => `<button data-est="${k}" aria-pressed="${f.estado === k}">${l}</button>`).join('')}</div>
         ${sel('fCentro', 'centro', 'Centro')}${sel('fDep', 'departamento', 'Departamento')}${sel('fResp', 'responsable', 'Responsable')}<label class="sel"><span class="sr">Sexo</span><select id="fSx"><option value="">Sexo: todos</option>${[['mujer', 'Mujeres'], ['hombre', 'Hombres'], ['sin', 'Sin indicar']].map(([k, l]) => `<option value="${k}" ${f.sexo === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="search-in"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">Buscar empleados</span><input id="eq" type="search" placeholder="Nombre, código, puesto…" value="${esc(f.q)}"></label>
       </div>
-      <div class="card tbl-card"><div class="tbl-wrap"><table class="tbl emp-tbl"><thead><tr><th>Empleado</th><th>Departamento</th><th>Responsable</th><th>Centro</th><th>Puesto</th><th>Contratación</th><th class="num">Salario anual</th></tr></thead>
-        <tbody id="eBody">${filas(MotorEmpleados.filtrar(todos, { ...f, hoy: hoy() }))}</tbody></table></div></div>
+      <div class="card tbl-card"><div class="tbl-wrap"><table class="tbl emp-tbl"><thead><tr>${COLS.map(([k, l]) => `<th class="${k === 'salario' ? 'num' : ''}" aria-sort="${orden.col === k ? (orden.dir > 0 ? 'ascending' : 'descending') : 'none'}"><button type="button" class="th-sort" data-sort="${k}">${l}<svg class="i" viewBox="0 0 24 24"><path d="M8 10l4-4 4 4M8 14l4 4 4-4"/></svg></button></th>`).join('')}</tr></thead>
+        <tbody id="eBody"></tbody></table></div></div>
       <p class="muted small" style="margin-top:12px"><span id="eCount"></span> Pulsa una fila para ver la ficha. <button class="linkbtn" id="plantilla">Descargar plantilla CSV</button> · <button class="linkbtn" id="cambiarPw">Cambiar contraseña</button></p>
       <input type="file" id="impFile" accept=".csv,text/csv" hidden>
     </div>`;
-    const repintar = () => { const l = MotorEmpleados.filtrar(Empleados.todos(), { ...f, hoy: hoy() }); $('#eBody').innerHTML = filas(l); $('#eCount').textContent = `${l.length} de ${Empleados.todos().length} empleados.`; };
+    const repintar = () => { const l = ordenar(MotorEmpleados.filtrar(Empleados.todos(), { ...f, hoy: hoy() })); $('#eBody').innerHTML = filas(l); $('#eCount').textContent = `${l.length} de ${Empleados.todos().length} empleados.`; };
     repintar();
     $$('[data-est]', main).forEach(b => b.onclick = () => { f.estado = b.dataset.est; render(main); });
     [['fCentro', 'centro'], ['fDep', 'departamento'], ['fResp', 'responsable']].forEach(([id, k]) => $('#' + id).onchange = e => { f[k] = e.target.value; repintar(); });
     $('#eq').oninput = e => { f.q = e.target.value; repintar(); };
+    $$('[data-sort]', main).forEach(b => b.onclick = () => {
+      const k = b.dataset.sort; orden = orden.col === k ? { col: k, dir: -orden.dir } : { col: k, dir: 1 };
+      $$('[data-sort]', main).forEach(x => x.closest('th').setAttribute('aria-sort', x === b ? (orden.dir > 0 ? 'ascending' : 'descending') : 'none'));
+      repintar();
+    });
     $('#fSx').onchange = e => { f.sexo = e.target.value; repintar(); };
     $('#verSinSexo') && ($('#verSinSexo').onclick = () => { f.sexo = 'sin'; f.estado = 'todos'; render(main); });
     $('#lock').onclick = () => { Empleados.bloquear(); render(main); toast('Empleados bloqueados'); };
@@ -130,6 +139,15 @@ const ModEmpleados = (() => {
     const d = abrirModal(`<form id="fForm" novalidate>
       <div class="dlg-b">
         <div class="ficha-h"><span class="avatar lg">${esc(ini([e.nombre, e.apellido1].join(' ').trim()) || '+')}</span><div><h2>${id ? esc(e.nombreCompleto) : 'Nuevo empleado'}</h2>${id ? `<span class="muted">${esc(e.codigo)} · ${antig(e.fechaContratacion)} en la empresa</span>` : '<span class="muted">Solo datos básicos para calcular y filtrar</span>'}</div></div>
+        ${id ? (() => { const pr = (e.pruebas || []).slice(-1)[0], hoyI = hoy();
+          const chip = (ident, ico, texto, extra = '') => `<button type="button" class="acc-chip" id="${ident}">${icon(ico)}<span>${texto}</span>${extra}</button>`;
+          return `<div class="ficha-acc" role="group" aria-label="Accesos de esta persona">
+            ${chip('fAusBtn', 'ausencias', 'Ausencias', (e.ausencias || []).length ? `<b>${e.ausencias.length}</b>` : '')}
+            ${chip('fVacBtn', 'vacaciones', 'Vacaciones')}
+            ${chip('fProBtn', 'promociones', 'Promociones', (e.promociones || []).length ? `<b>${e.promociones.length}</b>` : '')}
+            ${chip('fPruBtn', 'pruebas', 'Periodo de prueba', pr ? `<b class="${pr.resultado ? '' : 'on'}">${pr.resultado ? (pr.resultado === 'favorable' ? '✓' : '✗') : MotorProcesos.diasEntre(hoyI, pr.fin) >= 0 ? 'en curso' : '!'}</b>` : '')}
+            ${chip('fSalBtn', 'salidas', e.salida ? 'Salida' : 'Iniciar salida', e.salida && !e.salida.cerrada ? '<b class="on">en curso</b>' : '')}
+          </div>`; })() : ''}
         <div class="row2"><div class="field"><label for="fCod">Código de empleado</label><input id="fCod" value="${esc(e.codigo)}" required></div>
           <div class="field"><label for="fNom">Nombre</label><input id="fNom" value="${esc(e.nombre)}" required autocomplete="off"></div></div>
         <div class="row2"><div class="field"><label for="fAp1">Primer apellido</label><input id="fAp1" value="${esc(e.apellido1)}" required autocomplete="off"></div>
@@ -147,7 +165,7 @@ const ModEmpleados = (() => {
         <p class="form-err" id="fErr" role="alert"></p>
       </div>
       <div class="dlg-f">
-        ${id ? `<button type="button" class="btn ghost danger" id="fDel" style="margin-right:auto">Eliminar</button><button type="button" class="btn ghost" id="fProBtn">Promociones${(e.promociones || []).length ? ` (${e.promociones.length})` : ''}</button><button type="button" class="btn ghost" id="fAusBtn">Ausencias${(e.ausencias || []).length ? ` (${e.ausencias.length})` : ''}</button><button type="button" class="btn ghost" id="fVacBtn">Calcular vacaciones</button>` : ''}
+        ${id ? `<button type="button" class="btn ghost danger icon-only-sm" id="fDel" style="margin-right:auto" title="Eliminar empleado"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Eliminar</span></button>` : ''}
         <button type="button" class="btn ghost" id="fCancel">Cancelar</button><button class="btn">${id ? 'Guardar' : 'Crear empleado'}</button>
       </div></form>`, { ancho: 640 });
     $('#fCancel', d).onclick = () => d.close('cancel');
@@ -156,6 +174,8 @@ const ModEmpleados = (() => {
     $('#fFb', d).addEventListener('input', () => { $('#fMotBox', d).hidden = !$('#fFb', d).value; });
     $('#fProBtn', d) && ($('#fProBtn', d).onclick = () => { d.close('cancel'); ModPromociones.formulario(main, { empleadoId: id }); });
     $('#fAusBtn', d) && ($('#fAusBtn', d).onclick = () => { d.close('cancel'); ModAusencias.deEmpleado(id); });
+    $('#fPruBtn', d) && ($('#fPruBtn', d).onclick = () => { d.close('cancel'); const pr = (e.pruebas || []).slice(-1)[0]; if (pr) ModPruebas.abrir(pr.id); else ModPruebas.formulario(null, { empleadoId: id, inicio: e.fechaContratacion }); });
+    $('#fSalBtn', d) && ($('#fSalBtn', d).onclick = () => { d.close('cancel'); ModSalidas.formulario(null, { empleadoId: id }); });
     $('#fForm', d).onsubmit = async ev => {
       ev.preventDefault();
       const sal = MotorEmpleados.importe($('#fSal', d).value);
