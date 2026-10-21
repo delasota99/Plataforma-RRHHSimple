@@ -87,7 +87,8 @@ const ModAltas = (() => {
       e.preventDefault();
       const sal = MotorEmpleados.importe($('#naSal', d).value), of = $('#naOf', d).checked;
       const a = Altas.crear({ nombre: $('#naNom', d).value.trim(), sexo: $('#naSx', d).value, centro: $('#naCen', d).value, puesto: $('#naPue', d).value.trim(), departamento: $('#naDep', d).value,
-        salario: sal === null ? '' : sal, fechaIncorporacion: $('#naInc', d).value, ...(of ? { check: { ofertaEnviada: true }, fechaOferta: hoyISO() } : {}) });
+        salario: sal === null ? '' : sal, fechaIncorporacion: $('#naInc', d).value, ...(prefill.vacanteId ? { vacanteId: prefill.vacanteId } : {}), ...(of ? { check: { ofertaEnviada: true }, fechaOferta: hoyISO() } : {}) });
+      if (prefill.vacanteId) Procesos.Vacantes.vincularAlta(prefill.vacanteId, prefill.nombre, a.id);
       d.close('ok'); Shell.pintarNav(); toast('Alta creada · tarea automática de documentación añadida');
       Ficus.decir('Alta en marcha. Te he apuntado una tarea con los documentos que faltan.', 'yay');
       abierta = a.id; if (main && location.hash === '#altas') detalle(main); else { location.hash = '#altas'; }
@@ -159,7 +160,7 @@ const ModAltas = (() => {
     const box = $('.box', b);
     box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop');
     const w = document.createElement('span'); w.className = 'burst'; w.setAttribute('aria-hidden', 'true');
-    w.innerHTML = '<i class="ring"></i>' + Array.from({ length: 8 }, (_, i) => `<i class="dot" style="--a:${i * 45 + (Math.random() * 16 - 8)}deg;--d:${18 + Math.random() * 8}px"></i>`).join('');
+    w.innerHTML = '<i class="bring"></i>' + Array.from({ length: 8 }, (_, i) => `<i class="dot" style="--a:${i * 45 + (Math.random() * 16 - 8)}deg;--d:${18 + Math.random() * 8}px"></i>`).join('');
     box.append(w); setTimeout(() => { w.remove(); box.classList.remove('pop'); }, 700);
   }
 
@@ -200,7 +201,7 @@ const ModAltas = (() => {
     if (!Empleados.desbloqueado && !(await pedirPassword())) return;
     ModEmpleados.ficha(null, null, {
       prefill: { ...MotorEmpleados.partirNombre(a.nombre), sexo: a.sexo || '', centro: a.centro, puesto: a.puesto, departamento: a.departamento, salario: a.salario, fechaContratacion: a.fechaIncorporacion },
-      alGuardar: emp => { Altas.editar(a.id, { cerrada: true, fechaCierre: hoyISO(), empleadoId: emp.id }); Shell.pintarNav(); detalle(main); Ficus.decir(`¡Bienvenida a ${emp.nombre.split(' ')[0]}! Alta cerrada y ficha creada.`, 'yay'); }
+      alGuardar: emp => { Altas.editar(a.id, { cerrada: true, fechaCierre: hoyISO(), empleadoId: emp.id }); Shell.pintarNav(); detalle(main); Ficus.decir(`¡Bienvenida a ${emp.nombre.split(' ')[0]}! Alta cerrada y ficha creada.`, 'yay'); setTimeout(() => ModPruebas.formulario(null, { empleadoId: emp.id, inicio: emp.fechaContratacion, desdeAlta: true }), 400); }
     });
   }
   function pedirPassword() {

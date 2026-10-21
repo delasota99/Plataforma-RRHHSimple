@@ -1,7 +1,7 @@
 /* Finiquito (liquidación) con indemnización opcional. Motores: finiquito.js, vacaciones.js, indemnizacion.js */
 const ModFiniquito = (() => {
   const P = window.RRHH_PARAMS;
-  let voluntaria = false, empSel = null;
+  let voluntaria = false, empSel = null, pendiente = null;
   const cfg = () => ({ pagasExtra: P.pagasExtra, vacaciones: { diasLaborables: P.vacaciones.diasLaborables } });
 
   function render(main) {
@@ -48,6 +48,15 @@ const ModFiniquito = (() => {
       const cat = Calc.categoriaDePuesto(e.puesto); if (cat) $('#fCat').value = cat.id;
       pintar();
     });
+    // Llegada desde una salida: empleado, fecha de baja y preaviso ya rellenos.
+    if (pendiente && $('#cEmp')) {
+      const x = pendiente; pendiente = null;
+      $('#cEmp').value = String(x.id); $('#cEmp').dispatchEvent(new Event('change'));
+      if (x.fin) $('#fFin').value = x.fin;
+      if (x.voluntaria) $('#fSeg [data-v="1"]').click();
+      if (x.comunicacion) $('#fCom').value = x.comunicacion;
+      const e = Empleados.buscar(x.id); if (e) { const anio = ($('#fFin').value).slice(0, 4); $('#fCons').value = e.vacaciones?.[anio] ?? 0; }
+    }
     pintar();
   }
 
@@ -85,5 +94,6 @@ const ModFiniquito = (() => {
       ])}`;
   }
 
-  return { render };
+  function paraEmpleado(id, o = {}) { pendiente = { id, ...o }; if (location.hash === '#finiquito') Shell.refrescar(); else location.hash = '#finiquito'; }
+  return { render, paraEmpleado };
 })();

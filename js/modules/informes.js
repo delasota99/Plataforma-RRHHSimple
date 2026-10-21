@@ -7,6 +7,7 @@ const ModInformes = (() => {
     { id: 'plantilla', nombre: 'Composición de la plantilla', desc: 'A una fecha: centro, departamento, grupo, puesto y antigüedad', ico: 'empleados', porFecha: true },
     { id: 'movimientos', nombre: 'Incorporaciones y bajas', desc: 'Del año, con el motivo de cada baja', ico: 'altas' },
     { id: 'ausencias', nombre: 'Ausencias y conciliación', desc: 'Personas y días por tipo: bajas, nacimiento, excedencias, reducciones', ico: 'ausencias' },
+    { id: 'seleccion', nombre: 'Selección y contratación', desc: 'Candidaturas, entrevistas y personas seleccionadas por sexo', ico: 'reclutamiento' },
     { id: 'altas', nombre: 'Procesos de alta', desc: 'Estado, centro, puesto y días de la oferta a la incorporación', ico: 'documentos' },
     { id: 'promociones', nombre: 'Promociones', desc: 'Cambios de categoría o puesto y tasa de promoción', ico: 'salarios' }
   ];
@@ -17,6 +18,7 @@ const ModInformes = (() => {
       case 'plantilla': return MotorInformes.plantilla(emps, { fecha, P });
       case 'movimientos': return MotorInformes.movimientos(emps, { anio, hoy, P });
       case 'ausencias': return MotorInformes.ausencias(emps, { anio, hoy, tipos: P.ausencias.tipos });
+      case 'seleccion': return MotorInformes.seleccion(Procesos.Vacantes.todas(), { anio, hoy });
       case 'altas': return MotorInformes.altas(Altas.todas(), { anio, estado: MotorAltas.estado, progreso: MotorAltas.progreso, P });
       case 'promociones': return MotorInformes.promociones(emps, { anio, P });
     }

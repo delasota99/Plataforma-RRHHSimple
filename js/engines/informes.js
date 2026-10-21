@@ -121,6 +121,37 @@
     };
   }
 
+  /* Subida media (%) de las subidas salariales con salario anterior y nuevo. */
+  function subidaMedia(l) {
+    const v = k => { const x = l.filter(p => sx(p.sexo) === k && p.salarioAnterior > 0 && p.salarioNuevo > 0).map(p => (p.salarioNuevo - p.salarioAnterior) / p.salarioAnterior * 100); return x.length ? r1(x.reduce((a, b) => a + b, 0) / x.length) : 0; };
+    return { etiqueta: 'Subida media sobre el salario anterior', m: v('m'), h: v('h'), s: v('s') };
+  }
+
+  /* 6. Selección y contratación (vacantes abiertas en el año). Solo recuentos por sexo. */
+  function seleccion(vacantes, { anio, hoy }) {
+    const l = vacantes.filter(v => (v.apertura || '').startsWith(String(anio)));
+    const s = (k, x) => l.reduce((a, v) => a + (Number(v[k]?.[x]) || 0), 0);
+    const sel = x => l.reduce((a, v) => a + (v.seleccionados || []).filter(p => p.sexo === x).length, 0);
+    const C = { m: s('candidaturas', 'm'), h: s('candidaturas', 'h') }, E = { m: s('entrevistas', 'm'), h: s('entrevistas', 'h') }, S = { m: sel('mujer'), h: sel('hombre') };
+    const pc = (a, b) => b ? r1(a / b * 100) : 0;
+    const porPuesto = [...new Set(l.map(v => v.puesto))].map(p => { const vs = l.filter(v => v.puesto === p); return { etiqueta: p, m: vs.reduce((a, v) => a + (Number(v.candidaturas?.m) || 0), 0), h: vs.reduce((a, v) => a + (Number(v.candidaturas?.h) || 0), 0), s: 0 }; }).sort((a, b) => (b.m + b.h) - (a.m + a.h));
+    const cubiertas = l.filter(v => v.estado === 'cubierta' && v.cierre), media = cubiertas.length ? Math.round(cubiertas.reduce((a, v) => a + (parse(v.cierre) - parse(v.apertura)) / DAY, 0) / cubiertas.length) : null;
+    const canales = {}; l.forEach(v => (v.canales || []).forEach(c => { const n = c === 'Otro' && v.otroCanal ? v.otroCanal : c; canales[n] = (canales[n] || 0) + 1; }));
+    const EST = { abierta: 'Abierta', cubierta: 'Cubierta', desierta: 'Desierta', cancelada: 'Cancelada' };
+    return {
+      id: 'seleccion', titulo: 'Selección y contratación', periodo: `Año ${anio}`, norma: 'RD 901/2020, anexo (proceso de selección y contratación)',
+      secciones: [
+        { titulo: 'Embudo de selección', unidad: 'personas', sinTotal: true, filas: [{ etiqueta: 'Candidaturas', ...C, s: 0 }, { etiqueta: 'Entrevistas', ...E, s: 0 }, { etiqueta: 'Personas seleccionadas', ...S, s: 0 }] },
+        { titulo: 'Tasas de paso', unidad: 'porcentaje', filas: [{ etiqueta: '% de candidaturas que llegan a entrevista', m: pc(E.m, C.m), h: pc(E.h, C.h), s: 0 }, { etiqueta: '% de entrevistas que acaban en selección', m: pc(S.m, E.m), h: pc(S.h, E.h), s: 0 }] },
+        { titulo: 'Candidaturas por puesto', unidad: 'personas', filas: porPuesto }
+      ],
+      detalle: { columnas: ['Puesto', 'Centro', 'Departamento', 'Apertura', 'Cierre', 'Estado', 'Días', 'Canales', 'Candidaturas M', 'Candidaturas H', 'Entrevistas M', 'Entrevistas H', 'Seleccionadas'],
+        filas: l.sort((a, b) => a.apertura.localeCompare(b.apertura)).map(v => [v.puesto, v.centro || '', v.departamento || '', fdmy(v.apertura), fdmy(v.cierre), EST[v.estado || 'abierta'], Math.round((parse(v.cierre || hoy) - parse(v.apertura)) / DAY), (v.canales || []).map(c => c === 'Otro' && v.otroCanal ? v.otroCanal : c).join(', '), Number(v.candidaturas?.m) || 0, Number(v.candidaturas?.h) || 0, Number(v.entrevistas?.m) || 0, Number(v.entrevistas?.h) || 0, (v.seleccionados || []).map(p => `${p.nombre} (${SEXOS[p.sexo] || '?'})`).join(', ')]) },
+      notas: [`${l.length} vacante${l.length === 1 ? '' : 's'} abierta${l.length === 1 ? '' : 's'} en el año; ${cubiertas.length} cubierta${cubiertas.length === 1 ? '' : 's'}${media !== null ? `, en ${media} días de media` : ''}.`,
+        ...(Object.keys(canales).length ? [`Canales usados (número de vacantes): ${Object.entries(canales).sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} (${n})`).join(', ')}.`] : [])]
+    };
+  }
+
   /* 5. Promociones del año. */
   function promociones(empleados, { anio, P }) {
     const ini = `${anio}-01-01`, fin = `${anio}-12-31`;
@@ -134,7 +165,8 @@
       secciones: [
         { titulo: 'Resumen', unidad: 'personas', filas: [pp, pm] },
         { titulo: 'Tasa de promoción', unidad: 'porcentaje', filas: [tasa] },
-        { titulo: 'Por tipo de cambio', unidad: 'cambios', filas: agrupar(l, p => p.tipo, { orden: P.tiposPromocion }) }
+        { titulo: 'Por tipo de cambio', unidad: 'cambios', filas: agrupar(l.map(p => ({ ...p, tipo: p.tipo === 'Mejora salarial' ? 'Subida salarial' : p.tipo })), p => p.tipo, { orden: P.tiposPromocion }) },
+        { titulo: 'Subida salarial media', unidad: 'porcentaje', filas: [subidaMedia(l)] }
       ],
       detalle: { columnas: ['Fecha', 'Nombre', 'Sexo', 'Tipo', 'Antes', 'Después', 'Nota'],
         filas: l.sort((a, b) => a.fecha.localeCompare(b.fecha)).map(p => [fdmy(p.fecha), p.persona, SEXOS[p.sexo] || 'Sin indicar', p.tipo, p.de || '', p.a || '', p.nota || '']) },
@@ -146,7 +178,7 @@
   function conTotales(sec) {
     const sumable = sec.unidad === 'personas' || sec.unidad === 'días' || sec.unidad === 'cambios';
     const filas = sec.filas.map(f => ({ ...f, t: f.m + f.h + f.s, pm: f.m + f.h + f.s ? f.m / (f.m + f.h + f.s) : 0, ph: f.m + f.h + f.s ? f.h / (f.m + f.h + f.s) : 0 }));
-    const tot = sumable && filas.length > 1 ? filas.reduce((a, f) => ({ etiqueta: 'Total', m: a.m + f.m, h: a.h + f.h, s: a.s + f.s }), { etiqueta: 'Total', m: 0, h: 0, s: 0 }) : null;
+    const tot = sumable && !sec.sinTotal && filas.length > 1 ? filas.reduce((a, f) => ({ etiqueta: 'Total', m: a.m + f.m, h: a.h + f.h, s: a.s + f.s }), { etiqueta: 'Total', m: 0, h: 0, s: 0 }) : null;
     if (tot) { tot.t = tot.m + tot.h + tot.s; tot.pm = tot.t ? tot.m / tot.t : 0; tot.ph = tot.t ? tot.h / tot.t : 0; }
     return { ...sec, sumable, filas, total: tot, conSin: !!(filas.some(f => f.s) || (tot && tot.s > 0)) };
   }
@@ -172,7 +204,7 @@
     ];
   }
 
-  const api = { aHojas, plantilla, movimientos, ausencias, altas, promociones, conTotales, agrupar, SEXOS };
+  const api = { aHojas, seleccion, plantilla, movimientos, ausencias, altas, promociones, conTotales, agrupar, SEXOS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.MotorInformes = api;
 })(typeof window !== 'undefined' ? window : globalThis);

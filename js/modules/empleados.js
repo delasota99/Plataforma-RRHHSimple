@@ -154,7 +154,7 @@ const ModEmpleados = (() => {
     let sexo = e.sexo || '';
     $$('[data-sx]', d).forEach(b => b.onclick = () => { sexo = b.dataset.sx; $$('[data-sx]', d).forEach(x => { x.setAttribute('aria-pressed', x === b); x.setAttribute('aria-checked', x === b); }); const th = $('#fSexo .thumb', d); th.style.opacity = 1; th.style.transform = sexo === 'hombre' ? 'translateX(100%)' : 'none'; });
     $('#fFb', d).addEventListener('input', () => { $('#fMotBox', d).hidden = !$('#fFb', d).value; });
-    $('#fProBtn', d) && ($('#fProBtn', d).onclick = () => { d.close('cancel'); promociones(id, main); });
+    $('#fProBtn', d) && ($('#fProBtn', d).onclick = () => { d.close('cancel'); ModPromociones.formulario(main, { empleadoId: id }); });
     $('#fAusBtn', d) && ($('#fAusBtn', d).onclick = () => { d.close('cancel'); ModAusencias.deEmpleado(id); });
     $('#fForm', d).onsubmit = async ev => {
       ev.preventDefault();
@@ -178,37 +178,6 @@ const ModEmpleados = (() => {
       $('#fVacBtn', d).onclick = () => { d.close('vac'); ModVacaciones.paraEmpleado(id); };
     }
     $('#fCod', d).focus();
-  }
-
-  /* Promociones y cambios de puesto (para los informes de igualdad). Al guardar, la ficha pasa al puesto nuevo. */
-  function promociones(id, main) {
-    const e = Empleados.buscar(id); if (!e) return;
-    const l = [...(e.promociones || [])].sort((a, b) => b.fecha.localeCompare(a.fecha));
-    const puestos = [...new Set([...P.puestos.map(p => p.puesto), ...MotorEmpleados.valores(Empleados.todos(), 'puesto')])];
-    const d = abrirModal(`<form id="prF" novalidate><div class="dlg-b">
-      <h2 style="font-size:20px;font-weight:600;margin:0 0 4px">Promociones · ${esc(e.nombreCompleto)}</h2><p class="muted" style="margin:0 0 14px">Puesto actual: ${esc(e.puesto || '—')}${e.departamento ? ' · ' + esc(e.departamento) : ''}</p>
-      ${l.length ? `<ul class="pro-list">${l.map(p => `<li><span class="chip-c tag-empresa">${Fecha.larga(Fecha.parse(p.fecha))}</span><span><b>${esc(p.tipo)}</b><small>${esc(p.de || '—')} → ${esc(p.a || '—')}${p.nota ? ' · ' + esc(p.nota) : ''}</small></span><button type="button" class="icon-act" data-pdel="${p.id}" aria-label="Quitar" title="Quitar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></li>`).join('')}</ul>` : '<p class="muted small">Sin promociones registradas.</p>'}
-      <div class="pro-new"><span class="flabel">Registrar una nueva</span>
-        <div class="row2"><div class="field"><label for="prFe">Fecha</label><input type="date" id="prFe" value="${hoy()}"></div>
-          <div class="field"><label for="prTi">Tipo</label><select id="prTi">${P.tiposPromocion.map(t => `<option>${esc(t)}</option>`).join('')}</select></div></div>
-        <div class="row2"><div class="field"><label for="prDe">Antes</label><input id="prDe" value="${esc(e.puesto || '')}"></div>
-          <div class="field"><label for="prA">Después</label><input id="prA" list="prPues" placeholder="Nuevo puesto"><datalist id="prPues">${puestos.map(v => `<option value="${esc(v)}">`).join('')}</datalist></div></div>
-        <div class="field"><label for="prNo">Nota <span class="muted" style="font-weight:400">(opcional)</span></label><input id="prNo" maxlength="120"></div>
-        <label class="check"><input type="checkbox" id="prAct" checked> Actualizar el puesto de la ficha</label>
-      </div><p class="form-err" id="prErr" role="alert"></p></div>
-      <div class="dlg-f"><button type="button" class="btn ghost" id="prC">Cerrar</button><button class="btn">Registrar</button></div></form>`, { ancho: 600 });
-    $('#prC', d).onclick = () => d.close('cancel');
-    $$('[data-pdel]', d).forEach(b => b.onclick = async () => { await Empleados.editarEmpleado(id, { promociones: (e.promociones || []).filter(p => String(p.id) !== b.dataset.pdel) }); d.close('ok'); toast('Promoción quitada'); promociones(id, main); });
-    $('#prF', d).onsubmit = async ev => {
-      ev.preventDefault();
-      const p = { id: Date.now(), fecha: $('#prFe', d).value, tipo: $('#prTi', d).value, de: $('#prDe', d).value.trim(), a: $('#prA', d).value.trim(), nota: $('#prNo', d).value.trim() };
-      if (!p.fecha || !p.a) { $('#prErr', d).textContent = 'Indica la fecha y el puesto (o situación) nuevo.'; return; }
-      const cambios = { promociones: [...(e.promociones || []), p] };
-      if ($('#prAct', d).checked && p.tipo !== 'Mejora salarial' && p.tipo !== 'Cambio de departamento') cambios.puesto = p.a;
-      if ($('#prAct', d).checked && p.tipo === 'Cambio de departamento' && P.departamentos.includes(p.a)) cambios.departamento = p.a;
-      await Empleados.editarEmpleado(id, cambios); d.close('ok'); toast('Promoción registrada'); Ficus.decir('Anotado. Esto también cuenta en el plan de igualdad.', 'yay');
-      if (main) render(main);
-    };
   }
 
   function previsualizarImport(texto, main) {

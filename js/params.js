@@ -115,7 +115,35 @@ window.RRHH_PARAMS = {
   /* Datos para los informes de igualdad (fase 7). */
   motivosBaja: ['Baja voluntaria', 'Fin de contrato temporal', 'No superación del periodo de prueba', 'Despido disciplinario', 'Despido objetivo', 'Despido colectivo (ERE)',
     'Mutuo acuerdo', 'Jubilación', 'Incapacidad permanente', 'Fallecimiento', 'Excedencia sin reingreso', 'Otro'],
-  tiposPromocion: ['Promoción de categoría', 'Cambio de puesto', 'Cambio de departamento', 'Mejora salarial'],
+  tiposPromocion: ['Promoción de categoría', 'Cambio de puesto', 'Cambio de departamento', 'Subida salarial', 'Cambio de contrato'],
+  tiposContrato: ['Indefinido a jornada completa', 'Indefinido a tiempo parcial', 'Fijo discontinuo', 'Temporal por circunstancias de la producción', 'Temporal de sustitución', 'Formativo'],
+
+  /* PROCESOS (fase 8) */
+  procesos: {
+    canales: ['LinkedIn', 'InfoJobs', 'Indeed', 'Agencia de reclutamiento', 'ETT', 'Web de la empresa', 'Recomendación de empleado', 'Servicio público de empleo', 'Universidad o centro de formación', 'Otro'],
+    /* Periodo de prueba, convenio art. 27 (máximos). Por categoría de tablas. */
+    prueba: {
+      maxMeses: { A1: 6, A2: 6, A3: 3, A4: 3, E1: 6, E2: 6, E3: 6 },   // técnico titulado y comercial 6 · técnico no titulado 3
+      maxResto: 2,                                                  // resto de grupos profesionales
+      opciones: [1, 2, 3, 6],
+      // Seguimiento acordado con Fernando (21/10/2026): 1 mes → al final · 2-3 meses → a la mitad y al final · 6 meses → a los 2, a los 4 y al final.
+      avisoFinalDias: 7,                                            // la valoración final, 7 días antes del fin (5 si es de un mes)
+      fuente: 'Convenio, art. 27 · ET, art. 14'
+    },
+    /* Bajas y salidas: pasos de la lista. */
+    salida: [
+      { id: 'comunicacion', nombre: 'Comunicación por escrito (carta o baja voluntaria recibida)' },
+      { id: 'preaviso', nombre: 'Comprobar el preaviso (convenio art. 29 · 15 días en despido objetivo)' },
+      { id: 'liquidacion', nombre: 'Entregar copia de la liquidación 2 días antes (convenio art. 29.2)' },
+      { id: 'finiquito', nombre: 'Calcular y firmar el finiquito' },
+      { id: 'bajaSS', nombre: 'Baja en la Seguridad Social (6 días naturales, RD 84/1996 art. 32)' },
+      { id: 'certificado', nombre: 'Certificado de empresa (Certific@2)' },
+      { id: 'material', nombre: 'Devolución de material, EPI, llaves y tarjetas' },
+      { id: 'accesos', nombre: 'Retirar accesos (correo, Navision, sistemas)' },
+      { id: 'gestoria', nombre: 'Comunicar la baja a la gestoría' },
+      { id: 'entrevista', nombre: 'Entrevista de salida (opcional)', opcional: true }
+    ]
+  },
 
   /* Departamentos de la empresa (desplegable en empleados y altas). */
   departamentos: ['Fábrica', 'Comercial', 'Administración y Finanzas', 'Homologación y Registros'],

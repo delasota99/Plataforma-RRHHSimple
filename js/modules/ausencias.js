@@ -146,7 +146,7 @@ const ModAusencias = (() => {
     if (reduceMotion) return;
     const box = $('.box', b); box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop');
     const w = document.createElement('span'); w.className = 'burst'; w.setAttribute('aria-hidden', 'true');
-    w.innerHTML = '<i class="ring"></i>' + Array.from({ length: 8 }, (_, i) => `<i class="dot" style="--a:${i * 45}deg;--d:${18 + Math.random() * 8}px"></i>`).join('');
+    w.innerHTML = '<i class="bring"></i>' + Array.from({ length: 8 }, (_, i) => `<i class="dot" style="--a:${i * 45}deg;--d:${18 + Math.random() * 8}px"></i>`).join('');
     box.append(w); setTimeout(() => { w.remove(); box.classList.remove('pop'); }, 700);
   }
 

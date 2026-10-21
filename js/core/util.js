@@ -59,6 +59,10 @@ const ICON = {
   nacimiento: 'M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z',
   ausencias: 'M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM2 21v-1a6 6 0 0 1 9.5-4.9M16 15l5 5M21 15l-5 5',
   informes: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  reclutamiento: 'M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM21 21l-6.5-6.5M10 7.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM6.8 14a4 4 0 0 1 6.4 0',
+  pruebas: 'M7 3h10M7 21h10M8 3v4l4 5 4-5V3M8 21v-4l4-5 4 5v4',
+  promociones: 'M4 20l6-6 4 4 7-8M15 10h6v6',
+  salidas: 'M14 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5M10 16l-4-4 4-4M6 12h10',
   indemnizacion: 'M3 7h18v12H3zM3 11h18M7 15h3',
   finiquito: 'M6 3h9l3 3v15H6zM9 10h6M9 14h6M9 18h3',
   ajustes: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 15H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 4.4V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z',
@@ -66,3 +70,23 @@ const ICON = {
   info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v5M12 16h.01'
 };
 const icon = (k, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k] || ICON.info}"/></svg>`;
+
+/* Efecto burbuja al marcar una casilla .paso (se infla, estalla y suelta gotas). */
+function burbuja(b) {
+  if (reduceMotion || !b) return;
+  const box = b.querySelector('.box'); if (!box) return;
+  box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop');
+  const w = document.createElement('span'); w.className = 'burst'; w.setAttribute('aria-hidden', 'true');
+  w.innerHTML = '<i class="bring"></i>' + Array.from({ length: 8 }, (_, i) => `<i class="dot" style="--a:${i * 45 + (Math.random() * 16 - 8)}deg;--d:${18 + Math.random() * 8}px"></i>`).join('');
+  box.append(w); setTimeout(() => { w.remove(); box.classList.remove('pop'); }, 700);
+}
+/* Casilla de lista de pasos (mismo aspecto que en las altas). */
+const casilla = (attrs, on, texto, extra = '') => `<button type="button" class="paso${on ? ' on' : ''}" role="checkbox" aria-checked="${!!on}" ${attrs}><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><span class="paso-t">${texto}</span>${extra}</button>`;
+/* Pantalla de base de empleados bloqueada o sin crear (para procesos que la necesitan). */
+function pantallaBloqueo(main, titulo, desc, alAbrir) {
+  const conf = Empleados.configurado();
+  main.innerHTML = `<div class="view"><div class="page-h"><a class="crumb" href="#inicio">← Inicio</a><h1>${titulo}</h1><p>${desc}</p></div>
+    <div class="card lock-card"><div class="lock-ico">${icon('empleados')}</div><h2>${conf ? 'Datos protegidos' : 'Falta la base de empleados'}</h2><p class="muted">Estos datos se guardan cifrados con la base de empleados.</p>
+    ${conf ? '<button class="btn" id="pbUnlock">Desbloquear</button>' : '<a class="btn" href="#empleados">Ir a Empleados</a>'}</div></div>`;
+  const b = document.getElementById('pbUnlock'); if (b) b.onclick = async () => { if (await ModAltas.pedirPassword()) alAbrir(); };
+}

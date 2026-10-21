@@ -21,6 +21,25 @@ const Ficus = (() => {
       'Si eliges un alta en curso, relleno los datos por ti y puedo marcar el paso en su checklist.',
       'Aquí nada se guarda: cierras la pantalla y los datos se van. Discreción de planta de interior.'
     ],
+    reclutamiento: [
+      'Anota cuántas mujeres y hombres se presentan y se entrevistan: es justo lo que pide el plan de igualdad.',
+      'Cuando elijas a alguien, pulsa “Crear alta” y la abro ya rellenada.',
+      'Si una vacante se queda sin cubrir, ciérrala como “desierta”: también cuenta.'
+    ],
+    pruebas: [
+      'Producción, mantenimiento y administración: máximo 2 meses de prueba por convenio. Técnicos titulados y comerciales, 6.',
+      'La decisión de no superar la prueba hay que comunicarla antes de que termine. Por eso aviso 7 días antes.',
+      'Si alguien no supera la prueba, te ofrezco abrir su salida directamente.'
+    ],
+    promociones: [
+      'Una subida de salario también es un dato de igualdad: regístrala aquí y actualizo la ficha.',
+      'El informe de Promociones calcula la subida media de mujeres y de hombres.'
+    ],
+    salidas: [
+      'La copia de la liquidación, 2 días antes de la baja. Lo dice el convenio (art. 29.2).',
+      'Desde agosto de 2026 hay 6 días naturales para dar la baja en la Seguridad Social.',
+      'Pulsa “Calcular finiquito” y te lo llevo todo relleno.'
+    ],
     informes: [
       'Todos los informes separan mujeres y hombres. Si ves “Sin indicar”, completa el sexo en la ficha.',
       'Para el PDF, pulsa “Imprimir / PDF” y elige “Guardar como PDF”.',

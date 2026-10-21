@@ -53,5 +53,17 @@ ok('Excel: es un ZIP válido (firma PK)', bin[0] === 0x50 && bin[1] === 0x4B && 
 ok('CRC32 conocido ("123456789" = CBF43926)', X.crc32(new TextEncoder().encode('123456789')).toString(16) === 'cbf43926');
 ok('Columnas de Excel: A, Z, AA, AB', [0, 25, 26, 27].map(X.col).join() === 'A,Z,AA,AB');
 require('fs').writeFileSync(require('path').join(require('os').tmpdir(), 'prueba-informe.xlsx'), bin);
+/* Selección (fase procesos) */
+const sl = I.seleccion([{ puesto: 'Producción', apertura: '2026-03-01', cierre: '2026-03-31', estado: 'cubierta', canales: ['LinkedIn', 'InfoJobs'], candidaturas: { m: 10, h: 30 }, entrevistas: { m: 4, h: 6 }, seleccionados: [{ nombre: 'Rosa', sexo: 'mujer' }] },
+  { puesto: 'Comercial', apertura: '2026-06-01', canales: ['LinkedIn'], candidaturas: { m: 5, h: 5 }, entrevistas: { m: 1, h: 2 }, seleccionados: [] },
+  { puesto: 'Vieja', apertura: '2025-06-01', candidaturas: { m: 99, h: 99 } }], { anio: 2026, hoy: '2026-10-21' });
+ok('Selección: embudo del año (15 M / 35 H candidaturas)', sl.secciones[0].filas[0].m === 15 && sl.secciones[0].filas[0].h === 35);
+ok('Selección: sin fila de total en el embudo', I.conTotales(sl.secciones[0]).total === null);
+ok('Selección: tasa de entrevista (33,3 % M, 22,9 % H)', sl.secciones[1].filas[0].m === 33.3 && sl.secciones[1].filas[0].h === 22.9, JSON.stringify(sl.secciones[1].filas[0]));
+ok('Selección: canales en notas (LinkedIn 2)', /LinkedIn \(2\)/.test(sl.notas[1]));
+ok('Selección: días medios hasta cubrir (30)', /30 días de media/.test(sl.notas[0]));
+const prS = I.promociones([{ id: 9, sexo: 'mujer', fechaContratacion: '2020-01-01', promociones: [{ fecha: '2026-03-01', tipo: 'Subida salarial', salarioAnterior: 20000, salarioNuevo: 21000 }] }], { anio: 2026, P });
+ok('Promociones: subida media 5 % (mujer)', prS.secciones[3].filas[0].m === 5);
+
 console.log(fallos ? `\n${fallos} de ${total} pruebas fallidas` : `\nTodas las pruebas correctas (${total})`);
 process.exit(fallos ? 1 : 0);
