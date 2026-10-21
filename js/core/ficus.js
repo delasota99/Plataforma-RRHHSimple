@@ -21,6 +21,18 @@ const Ficus = (() => {
       'Si alguien ha disfrutado más días de los generados y se va, la diferencia se descuenta en el finiquito.',
       'Las vacaciones no disfrutadas por IT pueden usarse hasta 18 meses después del final de su año.'
     ],
+    empleados: [
+      'La base de empleados está cifrada: sin tu contraseña, ni yo puedo leerla. Y mira que lo intento.',
+      'Puedes importar a toda la plantilla de golpe con un CSV. Descarga la plantilla abajo.',
+      'Se bloquea sola tras 15 minutos sin actividad. Si sales a por café, tranquilo.',
+      'Desde la ficha de una persona puedes ir directamente a calcular sus vacaciones.'
+    ],
+    altas: [
+      'Si escribes algo en “Bloqueante”, el alta se marca en rojo para que no se te olvide.',
+      'Mientras falten documentos, te mantengo una tarea automática con el número exacto.',
+      'Al cerrar el alta, su ficha de empleado se crea con los datos que ya tienes.',
+      'En fábrica aparecen tres pasos más: talla de uniforme, correo personal y aviso a PRL y Calidad.'
+    ],
     tareas: [
       'Las tareas que se repiten crean la siguiente al completarlas. Ideal para el TC de cada mes.',
       'Pulsa el calendario de una tarea para descargarla y añadirla a Outlook: así te avisa aunque cierres la plataforma.',

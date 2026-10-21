@@ -5,14 +5,20 @@ const ModInicio = (() => {
     saludo:   { nombre: 'Saludo', span: 12 },
     tareas:   { nombre: 'Tareas', span: 7 },
     festivos: { nombre: 'Próximos festivos', span: 5 },
+    altas:    { nombre: 'Altas en curso', span: 12 },
     anio:     { nombre: 'El año en vacaciones', span: 4 },
     copia:    { nombre: 'Copia de seguridad', span: 4 },
     accesos:  { nombre: 'Herramientas', span: 12 }
-    // 'altas' se añade en la fase 3
   };
-  const POR_DEFECTO = ['saludo', 'tareas', 'festivos', 'accesos'];
+  const POR_DEFECTO = ['saludo', 'tareas', 'festivos', 'altas', 'accesos'];
   let editando = false;
-  const layout = () => Datos.get('panel', POR_DEFECTO).filter(k => k in BLOQUES);
+  const layout = () => {
+    let l = Datos.get('panel', POR_DEFECTO).filter(k => k in BLOQUES);
+    // Fase 3: se añade una vez el bloque de altas a los paneles ya personalizados.
+    if (!Datos.get('_panelFase3') && !l.includes('altas')) { const i = l.indexOf('accesos'); l.splice(i < 0 ? l.length : i, 0, 'altas'); Datos.set('panel', l); }
+    if (!Datos.get('_panelFase3')) Datos.set('_panelFase3', true);
+    return l;
+  };
   const setLayout = l => Datos.set('panel', l);
 
 
@@ -44,6 +50,17 @@ const ModInicio = (() => {
     return `<div class="card"><div class="card-h"><h3>Tareas</h3><button class="linkbtn" data-new-task>+ Nueva</button></div>
       ${g || '<p class="muted" style="margin:0">Todo al día. Apunta tareas con el botón amarillo <b>+</b>.</p>'}</div>`;
   }
+  function bAltas() {
+    const l = Altas.enCurso(), est = l.map(a => MotorAltas.estado(a)), n = k => est.filter(e => e === k).length;
+    const seg = [['en-proceso', 'En proceso'], ['pendiente-docs', 'Pendiente docs'], ['bloqueada', 'Bloqueadas'], ['sin-iniciar', 'Sin iniciar'], ['completada', 'Completadas']].filter(([k]) => n(k));
+    const prox = l.filter(a => a.fechaIncorporacion).sort((a, b) => a.fechaIncorporacion.localeCompare(b.fechaIncorporacion)).slice(0, 3);
+    return `<div class="card"><div class="card-h"><h3>Altas en curso</h3><a href="#altas">Ver todas</a></div>
+      ${l.length ? `<div class="altas-w"><div><div class="status-bar">${seg.map(([k], i) => `<i class="ae-${k}" style="width:${n(k) / l.length * 100}%;animation-delay:${i * 80}ms"></i>`).join('')}</div>
+      <div class="legend">${seg.map(([k, nom]) => `<span><i class="ae-${k}"></i>${nom}<b>${n(k)}</b></span>`).join('')}</div>
+      </div><ul class="alta-list">${(est.includes('bloqueada') ? l.filter(a => MotorAltas.estado(a) === 'bloqueada').slice(0, 2) : prox).map(a => { const e = MotorAltas.estado(a);
+        return `<li data-alta="${a.id}"><span class="avatar">${esc((a.nombre || '?').split(/\s+/).map(w => w[0]).slice(0, 2).join(''))}</span><span>${esc(a.nombre)}<span class="meta">${esc(a.puesto || '')} · ${esc(a.centro)}</span></span><span class="when${e === 'bloqueada' ? ' block' : ''}">${e === 'bloqueada' ? esc(a.bloqueante) : a.fechaIncorporacion ? Fecha.corta(Fecha.parse(a.fechaIncorporacion)) : Math.round(MotorAltas.progreso(a).pct * 100) + ' %'}</span></li>`; }).join('')}</ul></div>`
+      : '<p class="muted" style="margin:0">No hay altas en curso.</p>'}</div>`;
+  }
   function bFestivos() {
     const l = ModCalendario.proximos(4);
     return `<div class="card"><div class="card-h"><h3>Próximos festivos</h3><a href="#calendario">Calendario</a></div><ul class="fest">` +
@@ -69,7 +86,7 @@ const ModInicio = (() => {
     return `<div class="card"><div class="card-h"><h3>Herramientas</h3></div><div class="tools">` +
       l.map((r, i) => `<a class="tool" href="#${r}" style="--i:${i}"><span class="ico">${icon(r, '')}</span><b>${Shell.etiqueta(r)}</b></a>`).join('') + '</div></div>';
   }
-  const PINTAR = { saludo: bSaludo, tareas: bTareas, festivos: bFestivos, anio: bAnio, copia: bCopia, accesos: bAccesos };
+  const PINTAR = { saludo: bSaludo, tareas: bTareas, festivos: bFestivos, altas: bAltas, anio: bAnio, copia: bCopia, accesos: bAccesos };
 
   function render(main) {
     const L = layout(), ocultos = Object.keys(BLOQUES).filter(k => !L.includes(k));
@@ -89,6 +106,7 @@ const ModInicio = (() => {
     home.addEventListener('click', e => {
       const add = e.target.closest('[data-add]'); if (add) { setLayout([...L, add.dataset.add]); render(main); return; }
       const st = e.target.closest('[data-st]'); if (st) { avanzar(Number(st.closest('.task').dataset.id)); return; }
+      const al = e.target.closest('[data-alta]'); if (al) { ModAltas.abrir(Number(al.dataset.alta)); location.hash = '#altas'; return; }
       const ed = e.target.closest('.task [data-edit]'); if (ed) { const t = Tareas.todas().find(x => x.id === Number(ed.closest('.task').dataset.id)); if (t) Tareas.abrir({ tarea: t }); return; }
       const w = e.target.closest('.w'); if (!w) return;
       if (e.target.closest('[data-remove]')) { setLayout(L.filter(k => k !== w.dataset.w)); render(main); return; }

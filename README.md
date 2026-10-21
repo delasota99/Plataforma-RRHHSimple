@@ -16,6 +16,10 @@ Este repositorio guarda solo el **código** y su historial. Los datos (tareas, e
 2. Descarga el ZIP nuevo y **sustituye los archivos en la misma carpeta** (misma ruta). Así el navegador sigue encontrando tus datos.
 3. Si algo no aparece, ve a *Ajustes → Importar copia* y elige tu última copia.
 
+## Empleados y contraseña
+
+La base de empleados se cifra con tu contraseña (AES-GCM 256). Si la olvidas, esos datos **no se pueden recuperar**, tampoco desde una copia. Se bloquea sola tras 15 minutos sin actividad. El resto de datos (tareas, altas, calendario) no van cifrados.
+
 ## Copias de seguridad
 
 - **Guardar copia**: descarga un archivo `.json` con todos tus datos.
@@ -32,7 +36,7 @@ js/params.js            ÚNICO archivo de parámetros legales (convenio, tablas,
 js/engines/             Motores de cálculo: funciones puras, sin interfaz, con pruebas
 js/core/                Estructura común: datos y copias, tareas, asistente Ficus, navegación
 js/modules/             Pantallas (inicio, vacaciones, ajustes…)
-tests/                  Pruebas de los motores (node tests/vacaciones.test.js, tareas.test.js, festivos.test.js)
+tests/                  Pruebas de los motores: node tests/<nombre>.test.js (vacaciones, tareas, festivos, altas_empleados)
 docs/                   Licencias de las tipografías
 ```
 
@@ -46,6 +50,6 @@ Convenio colectivo estatal de industrias de alimentos compuestos para animales (
 |---|---|---|
 | 1. Base | Estructura, panel con bloques, tema, buscador, tareas básicas, copias, parámetros, Ficus, vacaciones | ✅ |
 | 2. Organización | Tareas con estados (pendiente, en proceso, terminado), fecha opcional, tablero tipo Trello, avisos y exportación a Outlook/Google; calendario de festivos (Madrid, Talavera, Valencia y empresa) | ✅ |
-| 3. Personas | Empleados (cifrado) y seguimiento de altas | Pendiente |
+| 3. Personas | Empleados cifrados con contraseña (importar CSV, filtros, fichas) y seguimiento de altas (checklist por centro, tareas automáticas, cierre → ficha) | ✅ |
 | 4. Documentos | Generador con las 6 plantillas | Pendiente |
 | 5. Calculadoras | Salarios, permisos, nacimiento, indemnización, finiquito | Pendiente |

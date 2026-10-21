@@ -3,7 +3,7 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.2.1 · fase 2';
+  const VERSION = '0.3.0 · fase 3';
   const NAV = [
     ['', [['inicio', 'Inicio']]],
     ['Personas', [['empleados', 'Empleados'], ['altas', 'Altas']]],
@@ -12,17 +12,17 @@ const Shell = (() => {
     ['', [['ajustes', 'Ajustes']]]
   ];
   const ETIQ = Object.fromEntries(NAV.flatMap(g => g[1]));
-  const MODULOS = { inicio: ModInicio, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, ajustes: ModAjustes };
-  const FASE = { empleados: 3, altas: 3, documentos: 4, salarios: 5, permisos: 5, nacimiento: 5, indemnizacion: 5, finiquito: 5 };
+  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, ajustes: ModAjustes };
+  const FASE = { documentos: 4, salarios: 5, permisos: 5, nacimiento: 5, indemnizacion: 5, finiquito: 5 };
   const main = $('#main');
   const ruta = () => { const r = location.hash.slice(1); return r in ETIQ ? r : 'inicio'; };
 
   /* ---------- Navegación ---------- */
   function pintarNav() {
-    const venc = Tareas.pendientes().vencidas.length;
+    const venc = Tareas.pendientes().vencidas.length, bloq = Altas.enCurso().filter(a => MotorAltas.estado(a) === 'bloqueada').length;
     $('#nav').innerHTML = '<div class="nav-pill" id="pill" aria-hidden="true"></div>' + NAV.map(([g, items]) =>
       (g ? `<div class="nav-group">${g}</div>` : '') + items.map(([r, l]) =>
-        `<a href="#${r}" data-r="${r}">${icon(r)}${l}${r === 'tareas' && venc ? `<span class="badge" aria-label="${venc} vencidas">${venc}</span>` : (!MODULOS[r] ? '<span class="soon" title="Llega en una próxima fase">·</span>' : '')}</a>`).join('')).join('');
+        `<a href="#${r}" data-r="${r}">${icon(r)}${l}${r === 'tareas' && venc ? `<span class="badge" aria-label="${venc} vencidas">${venc}</span>` : r === 'altas' && bloq ? `<span class="badge" aria-label="${bloq} bloqueadas">${bloq}</span>` : r === 'empleados' && Empleados.configurado() ? (Empleados.desbloqueado ? '' : '<span class="soon lock" title="Bloqueada"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>') : (!MODULOS[r] ? '<span class="soon" title="Llega en una próxima fase">·</span>' : '')}</a>`).join('')).join('');
     marcar();
   }
   function marcar() {
@@ -77,6 +77,9 @@ const Shell = (() => {
   let items = [], sel = 0;
   const ACCIONES = [
     { l: 'Nueva tarea', h: 'Acción', run: abrirTarea },
+    { l: 'Nueva alta', h: 'Acción', run: () => ModAltas.nueva(null) },
+    { l: 'Nuevo empleado', h: 'Acción', run: () => { location.hash = '#empleados'; setTimeout(() => $('#nuevo')?.click(), 80); } },
+    { l: 'Bloquear empleados', h: 'Acción', run: () => { Empleados.bloquear(); toast('Empleados bloqueados'); } },
     { l: 'Guardar copia de seguridad', h: 'Acción', run: guardarCopia },
     { l: 'Exportar tareas al calendario (.ics)', h: 'Acción', run: () => Tareas.descargarIcs(Tareas.todas().filter(t => !t.hecha), 'tareas-pendientes') },
     { l: 'Añadir festivo de empresa', h: 'Acción', run: () => { location.hash = '#calendario'; setTimeout(() => $('#empF')?.focus(), 80); } },
@@ -88,13 +91,16 @@ const Shell = (() => {
     const q = norm(cIn.value.trim());
     const herramientas = Object.entries(ETIQ).map(([r, l]) => ({ l, h: MODULOS[r] ? 'Herramienta' : `Fase ${FASE[r]}`, r, run: () => location.hash = '#' + r }));
     const f = l => q ? l.filter(x => norm(x.l + ' ' + x.h).includes(q)) : l;
-    const secs = [['Herramientas', f(herramientas).slice(0, q ? 8 : 6)], ['Acciones', f(ACCIONES)]];
+    const emps = Empleados.desbloqueado ? Empleados.todos().map(e => ({ l: e.nombre, h: `${e.codigo} · ${e.departamento || e.centro || ''}`, r: 'empleados', run: () => { ModEmpleados.abrir(e.id); if (location.hash === '#empleados') render(); else location.hash = '#empleados'; } })) : [];
+    const altas = Altas.enCurso().map(a => ({ l: `Alta de ${a.nombre}`, h: `${Math.round(MotorAltas.progreso(a).pct * 100)} % · ${a.centro}`, r: 'altas', run: () => { ModAltas.abrir(a.id); if (location.hash === '#altas') render(); else location.hash = '#altas'; } }));
+    const secs = [['Herramientas', f(herramientas).slice(0, q ? 8 : 6)], ['Empleados', q ? f(emps).slice(0, 6) : []], ['Altas en curso', f(altas).slice(0, q ? 6 : 3)], ['Acciones', f(ACCIONES)]];
     items = secs.flatMap(s => s[1]); sel = Math.min(sel, Math.max(0, items.length - 1));
     let i = 0;
     cList.innerHTML = items.length ? secs.filter(s => s[1].length).map(([n, l]) => `<li class="cmd-sec" role="presentation">${n}</li>` + l.map(x => { const k = i++;
       return `<li class="cmd-item" role="option" id="ci${k}" data-k="${k}" aria-selected="${k === sel}">${icon(x.r || 'accion')}${esc(x.l)}<small>${esc(x.h)}</small></li>`; }).join('')).join('')
       : '<li class="cmd-empty">Sin resultados. Prueba con “vac” o “copia”.</li>';
     cIn.setAttribute('aria-activedescendant', items.length ? 'ci' + sel : '');
+    cIn.placeholder = Empleados.desbloqueado ? 'Busca una herramienta, un empleado, un alta o una acción…' : 'Busca una herramienta, un alta o una acción…';
   }
   function abrirBuscador() { cerrarMenu(); cIn.value = ''; sel = 0; llenar(); cmdk.showModal(); cIn.focus(); }
   function ejecutar(k) { const it = items[k]; cmdk.close(); it?.run(); }
@@ -130,7 +136,8 @@ const Shell = (() => {
     setTema(tema()); Ficus.init(); pintarCopia(); pintarNav(); render(); Ficus.saludar(); Tareas.comprobarAvisos();
     if (Datos.estado.fallo) toast('Este navegador no permite guardar datos: los cambios se perderán al cerrar.');
   }
-  return { VERSION, etiqueta: r => ETIQ[r] || r, pintarNav, tema, setTema, arrancar };
+  Empleados.on(() => { pintarNav(); if (['empleados', 'vacaciones'].includes(ruta()) && !document.querySelector('dialog[open]')) { const y = scrollY; render(); scrollTo(0, y); } });
+  return { VERSION, etiqueta: r => ETIQ[r] || r, pintarNav, tema, setTema, arrancar, refrescar: () => render() };
 })();
 
 Shell.arrancar();

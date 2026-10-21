@@ -88,6 +88,9 @@ window.RRHH_PARAMS = {
     ]
   },
 
+  /* Centros de trabajo de la empresa. Los de fábrica añaden pasos específicos en las altas. */
+  centros: ['Fábrica (Talavera)', 'Oficina (Madrid)'],
+
   /* Puesto de la empresa → categoría (confirmado por Fernando, 20/10/2026). Editable en Ajustes (fase 5). */
   puestos: [
     { puesto:'Administrativo/a Contable', categoria:'D2' },

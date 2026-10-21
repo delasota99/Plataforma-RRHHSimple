@@ -10,7 +10,8 @@ const ModVacaciones = (() => {
   </div>
   <div class="calc">
     <form class="card form" id="vf" autocomplete="off" onsubmit="return false">
-      <div class="field"><label for="v-ini">Inicio del contrato</label><input type="date" id="v-ini" required><div class="hint">Cuando esté la base de empleados (fase 3) podrás elegir a la persona y se rellenará solo.</div></div>
+      <div id="empSel"></div>
+      <div class="field"><label for="v-ini">Inicio del contrato</label><input type="date" id="v-ini" required></div>
       <div class="row2">
         <div class="field"><label for="v-anio">Año de cálculo</label><input type="number" id="v-anio" min="2000" max="2100"></div>
         <div class="field"><label for="v-cons">Días consumidos</label><input type="number" id="v-cons" min="0" step="1" value="0" inputmode="numeric"></div>
@@ -66,6 +67,10 @@ const ModVacaciones = (() => {
   </div>
 </div>`;
 
+  let pendienteEmp = null;
+  /* Abre la calculadora con un empleado ya elegido (desde su ficha o el buscador). */
+  function paraEmpleado(id) { pendienteEmp = id; if (location.hash === '#vacaciones') Shell.refrescar(); else location.hash = '#vacaciones'; }
+
   function render(main) {
     main.innerHTML = HTML();
     const hoy = Fecha.iso(Fecha.hoy()), days = $('#days');
@@ -109,7 +114,42 @@ const ModVacaciones = (() => {
       $('#r-formula').innerHTML = `Este caso: <code>${P.vacaciones.diasLaborables} × ${r.altaFin} ÷ ${r.diasAnio} = ${dec(r.exFin)}</code> → <b>${r.genFin} días</b>.`;
     }
     $('#vf').addEventListener('input', update);
+    selectorEmpleado(update);
     update();
   }
-  return { render };
+
+  /* "Calcular para: empleado / manual" (solo con la base de empleados abierta). */
+  function selectorEmpleado(update) {
+    const caja = $('#empSel');
+    if (!Empleados.configurado()) return;
+    if (!Empleados.desbloqueado) { caja.innerHTML = `<div class="note">${icon('info')}<div>Para elegir a una persona, <a href="#empleados">desbloquea la base de empleados</a>.</div></div>`; return; }
+    const lista = Empleados.todos().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    if (!lista.length) return;
+    let modo = pendienteEmp ? 'emp' : 'man', empId = pendienteEmp || lista[0].id; pendienteEmp = null;
+    caja.innerHTML = `<span class="flabel">Calcular para</span>
+      <div class="seg" id="modeSeg"><span class="thumb"></span><button type="button" data-m="emp">Empleado</button><button type="button" data-m="man">Manual</button></div>
+      <div class="field" id="empField" style="margin-top:12px"><label for="v-emp" class="sr">Empleado</label><select id="v-emp">${lista.map(e => `<option value="${e.id}">${esc(e.nombre)} · ${esc(e.codigo)}${e.fechaBaja ? ' (baja)' : ''}</option>`).join('')}</select>
+        <div class="emp-card" id="empCard"></div><button type="button" class="linkbtn" id="guardarCons" style="margin-top:8px">Guardar los días consumidos en su ficha</button></div>`;
+    const seg = $('#modeSeg'), sel = $('#v-emp');
+    const pintarModo = () => { $$('button', seg).forEach(b => b.setAttribute('aria-pressed', b.dataset.m === modo)); seg.querySelector('.thumb').style.transform = modo === 'man' ? 'translateX(100%)' : 'none'; $('#empField').hidden = modo === 'man'; };
+    const rellenar = () => {
+      const e = Empleados.buscar(Number(sel.value)); if (!e) return;
+      const anio = Number($('#v-anio').value) || new Date().getFullYear();
+      $('#v-ini').value = e.fechaContratacion || ''; $('#v-fin').value = e.fechaBaja || ''; $('#v-cons').value = e.vacaciones?.[anio] ?? 0;
+      $('#empCard').innerHTML = `<span class="avatar">${esc(e.nombre.split(/\s+/).map(w => w[0]).slice(0, 2).join(''))}</span><span>${esc(e.departamento || '—')} · ${esc(e.centro || '—')}<span class="meta">Contratación ${e.fechaContratacion ? Fecha.larga(Fecha.parse(e.fechaContratacion)) : '—'}${e.fechaBaja ? ' · baja ' + Fecha.larga(Fecha.parse(e.fechaBaja)) : ''}</span></span>`;
+      update();
+    };
+    sel.value = String(empId);
+    seg.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; modo = b.dataset.m; pintarModo(); if (modo === 'emp') rellenar(); };
+    sel.onchange = rellenar;
+    $('#v-anio').addEventListener('change', () => { if (modo === 'emp') rellenar(); });
+    $('#v-ini').addEventListener('input', () => { if (modo === 'emp') { modo = 'man'; pintarModo(); } });
+    $('#guardarCons').onclick = async () => {
+      const id = Number(sel.value), e = Empleados.buscar(id), anio = Number($('#v-anio').value) || new Date().getFullYear();
+      await Empleados.editarEmpleado(id, { vacaciones: { ...(e.vacaciones || {}), [anio]: Math.max(0, Math.floor(Number($('#v-cons').value) || 0)) } });
+      toast(`Guardado en la ficha de ${e.nombre}: ${$('#v-cons').value} días en ${anio}`);
+    };
+    pintarModo(); if (modo === 'emp') rellenar();
+  }
+  return { render, paraEmpleado };
 })();

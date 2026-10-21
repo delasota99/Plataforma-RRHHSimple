@@ -4,8 +4,12 @@
  * - Tablero tipo Trello: columnas por estado, bloques con título e importancia; se arrastran entre columnas.
  */
 const ModTareas = (() => {
-  let vista = null, prio = '', q = '', recien = null;
-  const VISTAS = [['pendiente', 'Pendientes'], ['proceso', 'En proceso'], ['terminado', 'Terminadas'], ['todas', 'Todas'], ['tablero', 'Tablero']];
+  let vista = null, sub = '', q = '', recien = null;
+  const VISTAS = [['todas', 'Todas'], ['estado', 'Estado'], ['importancia', 'Importancia'], ['tablero', 'Tablero']];
+  const SUB = {
+    estado: [['', 'Agrupadas'], ['pendiente', 'Pendiente'], ['proceso', 'En proceso'], ['terminado', 'Terminado']],
+    importancia: [['', 'Agrupadas'], ['alta', 'Alta'], ['media', 'Media'], ['baja', 'Baja']]
+  };
   const GRUPOS = [['vencidas', 'Vencidas', 'late'], ['hoy', 'Hoy', ''], ['manana', 'Mañana', ''], ['semana', 'Próximos 7 días', ''], ['despues', 'Más adelante', ''], ['sinFecha', 'Sin fecha · recordatorios', '']];
   const tactil = matchMedia('(pointer:coarse)').matches;
   const ICO = {
@@ -15,7 +19,8 @@ const ModTareas = (() => {
     campana: '<svg class="i" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg>',
     repite: '<svg class="i" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/></svg>'
   };
-  const filtrar = l => l.filter(t => (!prio || t.prioridad === prio) && (!q || norm(t.titulo + ' ' + (t.nota || '')).includes(norm(q))));
+  const filtrar = l => l.filter(t => !q || norm(t.titulo + ' ' + (t.nota || '')).includes(norm(q)));
+  const porFecha = (a, b) => (a.fecha || '9999').localeCompare(b.fecha || '9999') || ({ alta: 0, media: 1, baja: 2 }[a.prioridad] - { alta: 0, media: 1, baja: 2 }[b.prioridad]);
   const cuando = f => {
     if (!f) return 'Sin fecha';
     const d = Fecha.parse(f), dif = Math.round((d - Fecha.hoy()) / DAY);
@@ -30,8 +35,9 @@ const ModTareas = (() => {
       ${botonEstado(t)}
       <i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i>
       <button class="tt tt-btn" data-edit>${esc(t.titulo)}${t.nota ? `<span class="nota">${esc(t.nota)}</span>` : ''}
-        <small class="${vencida(t) ? 'late-txt' : ''}">${cuando(t.fecha)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}${t.hecha && t.hechaEl ? ' · terminada el ' + new Date(t.hechaEl).toLocaleDateString('es-ES') : ''}</small></button>
+        <small class="${vencida(t) ? 'late-txt' : ''}">${t.altaId ? '<span class="tag">alta</span> ' : ''}${cuando(t.fecha)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}${t.hecha && t.hechaEl ? ' · terminada el ' + new Date(t.hechaEl).toLocaleDateString('es-ES') : ''}</small></button>
       <span class="row-acts">
+        ${t.altaId ? `<button class="icon-act" data-alta="${t.altaId}" aria-label="Ver el alta" title="Ver el alta">${icon('altas')}</button>` : ''}
         <button class="icon-act" data-edit aria-label="Editar ${esc(t.titulo)}" title="Editar">${ICO.editar}</button>
         ${t.hecha || !t.fecha ? '' : `<button class="icon-act" data-ics aria-label="Añadir ${esc(t.titulo)} a mi calendario" title="Añadir a mi calendario (.ics)">${ICO.cal}</button>`}
         <button class="icon-act" data-del aria-label="Eliminar ${esc(t.titulo)}" title="Eliminar">${ICO.borrar}</button>
@@ -42,15 +48,19 @@ const ModTareas = (() => {
     const todas = filtrar(Tareas.todas()), hoy = Fecha.iso(Fecha.hoy());
     const terminadas = todas.filter(t => t.estado === 'terminado').sort((a, b) => (b.hechaEl || 0) - (a.hechaEl || 0));
     const limpiar = '<button class="linkbtn" id="limpiar" style="margin-left:auto">Borrar terminadas</button>';
+    const activas = todas.filter(t => t.estado !== 'terminado');
+    const porVencimiento = l => { const g = MotorTareas.agrupar(l, hoy); return GRUPOS.map(([k, n, c]) => seccion(n, g[k], c)).join(''); };
     let html = '';
-    if (vista === 'terminado') html = seccion('Terminadas', terminadas.slice(0, 80), '', limpiar);
-    else {
-      const base = vista === 'todas' ? todas.filter(t => t.estado !== 'terminado') : todas.filter(t => t.estado === vista);
-      const g = MotorTareas.agrupar(base, hoy);
-      html = GRUPOS.map(([k, n, c]) => seccion(n, g[k], c)).join('');
-      if (vista === 'todas') html += seccion('Terminadas', terminadas.slice(0, 40), '', limpiar);
+    if (vista === 'todas') html = porVencimiento(activas) + seccion('Terminadas', terminadas.slice(0, 40), '', limpiar);
+    else if (vista === 'estado') {
+      if (!sub) html = MotorTareas.ESTADOS.map(e => seccion(`<i class="est ${e}"></i>${Tareas.ESTADO[e]}`, e === 'terminado' ? terminadas.slice(0, 40) : todas.filter(t => t.estado === e).sort(porFecha), '', e === 'terminado' ? limpiar : '')).join('');
+      else if (sub === 'terminado') html = seccion('Terminadas', terminadas.slice(0, 80), '', limpiar);
+      else html = porVencimiento(todas.filter(t => t.estado === sub));
+    } else if (vista === 'importancia') {
+      if (!sub) html = ['alta', 'media', 'baja'].map(k => seccion(`<i class="prio ${k}"></i>Importancia ${k}`, activas.filter(t => t.prioridad === k).sort(porFecha))).join('');
+      else html = porVencimiento(activas.filter(t => t.prioridad === sub));
     }
-    const vacio = q || prio ? 'Ninguna tarea coincide con el filtro.' : { pendiente: 'No tienes tareas pendientes.', proceso: 'No hay tareas en proceso.', terminado: 'Aún no has terminado ninguna tarea.', todas: 'No tienes tareas.' }[vista];
+    const vacio = q ? 'Ninguna tarea coincide con la búsqueda.' : vista === 'estado' && sub === 'terminado' ? 'Aún no has terminado ninguna tarea.' : 'No hay tareas aquí.';
     return html || `<div class="card empty-card"><p><b>${vacio}</b></p><p class="muted">Usa el botón amarillo <b>+</b> o pulsa “Nueva tarea”.</p></div>`;
   }
 
@@ -77,7 +87,8 @@ const ModTareas = (() => {
 
   /* ---------- Página ---------- */
   function render(main) {
-    vista = vista || Datos.get('_vistaTareas', 'pendiente');
+    vista = vista || Datos.get('_vistaTareas', 'todas'); if (!VISTAS.some(v => v[0] === vista)) vista = 'todas';
+    if (sub && !(SUB[vista] || []).some(x => x[0] === sub)) sub = '';
     const todas = Tareas.todas(), n = e => todas.filter(t => t.estado === e).length;
     const venc = todas.filter(vencida).length, avisos = Tareas.avisosActivos;
     main.innerHTML = `<div class="view">
@@ -96,8 +107,8 @@ const ModTareas = (() => {
         <div class="kpi ${venc ? 'bad' : ''}"><b>${venc}</b><span>vencidas</span></div>
       </div>
       <div class="toolbar">
-        <div class="seg3 vistas" role="group" aria-label="Mostrar">${VISTAS.map(([k, l]) => `<button data-vista="${k}" aria-pressed="${vista === k}">${k === 'tablero' ? '<svg class="i" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z"/></svg>' : k !== 'todas' ? `<i class="est ${k}"></i>` : ''}${l}</button>`).join('')}</div>
-        <div class="seg3" role="group" aria-label="Importancia">${[['', 'Toda importancia'], ['alta', 'Alta'], ['media', 'Media'], ['baja', 'Baja']].map(([k, l]) => `<button data-prio="${k}" aria-pressed="${prio === k}">${k ? `<i class="prio ${k}"></i>` : ''}${l}</button>`).join('')}</div>
+        <div class="seg3 vistas" role="group" aria-label="Ver">${VISTAS.map(([k, l]) => `<button data-vista="${k}" aria-pressed="${vista === k}">${k === 'tablero' ? '<svg class="i" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z"/></svg>' : ''}${l}</button>`).join('')}</div>
+        ${SUB[vista] ? `<div class="subfiltro" role="group" aria-label="Filtrar por ${vista}">${SUB[vista].map(([k, l]) => `<button data-sub="${k}" aria-pressed="${sub === k}">${k ? (vista === 'estado' ? `<i class="est ${k}"></i>` : `<i class="prio ${k}"></i>`) : ''}${l}</button>`).join('')}</div>` : ''}
         <label class="search-in"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">Buscar en tareas</span><input id="tq" type="search" placeholder="Buscar en tareas…" value="${esc(q)}"></label>
       </div>
       <div class="tlist">${vista === 'tablero' ? tablero() : lista()}</div>
@@ -117,8 +128,8 @@ const ModTareas = (() => {
   function pintarLista(main) { $('.tlist', main).innerHTML = vista === 'tablero' ? tablero() : lista(); recien = null; enlazarLista(main); }
 
   function enlazar(main) {
-    $$('[data-vista]', main).forEach(b => b.onclick = () => { vista = b.dataset.vista; Datos.set('_vistaTareas', vista); render(main); });
-    $$('[data-prio]', main).forEach(b => b.onclick = () => { prio = b.dataset.prio; render(main); });
+    $$('[data-vista]', main).forEach(b => b.onclick = () => { vista = b.dataset.vista; sub = ''; Datos.set('_vistaTareas', vista); render(main); });
+    $$('[data-sub]', main).forEach(b => b.onclick = () => { sub = b.dataset.sub; render(main); });
     $('#tq').oninput = e => { q = e.target.value; pintarLista(main); };
     $('#avisosBtn').onclick = async () => { if (Tareas.avisosActivos) Tareas.desactivarAvisos(); else await Tareas.activarAvisos(); render(main); };
     $('#icsAll').onclick = () => Tareas.descargarIcs(Tareas.todas().filter(t => !t.hecha && t.fecha), 'tareas-pendientes');
@@ -140,6 +151,7 @@ const ModTareas = (() => {
         const li = e.target.closest('.task'); if (!li) return;
         const id = Number(li.dataset.id), t = buscar(id); if (!t) return;
         if (e.target.closest('[data-st]')) cambiar(main, id);
+        else if (e.target.closest('[data-alta]')) { ModAltas.abrir(t.altaId); location.hash = '#altas'; }
         else if (e.target.closest('[data-del]')) Tareas.borrarConDeshacer(id);
         else if (e.target.closest('[data-ics]')) Tareas.descargarIcs([t], 'tarea-' + norm(t.titulo).replace(/[^a-z0-9]+/g, '-').slice(0, 40));
         else if (e.target.closest('[data-edit]')) Tareas.abrir({ tarea: t });
