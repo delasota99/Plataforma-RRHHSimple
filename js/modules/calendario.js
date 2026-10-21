@@ -79,7 +79,7 @@ const ModCalendario = (() => {
     return `<div class="card dia-panel">
       <div class="dp-h"><div class="cal lg"><small>${Fecha.mesCorto(t)}</small><b>${new Date(t).getUTCDate()}</b></div><div><b class="dp-dia">${Fecha.diaSemana(t)}</b><span class="muted">${Fecha.larga(t)}</span></div></div>
       ${fs.length ? `<ul class="dp-list">${fs.map(x => `<li><span class="chip-c tag-${x.capa}">${etiquetaCapa(x.capa, x.ambito)}</span>${esc(x.nombre)}</li>`).join('')}</ul>` : '<p class="muted small">Día laborable (con las capas activas).</p>'}
-      ${c.tareas ? `<h4>Tareas</h4>${ts.length ? `<ul class="dp-tasks">${ts.map(x => `<li class="${x.hecha ? 'done' : ''}"><i class="prio ${x.prioridad}"></i><button class="linkbtn" data-tarea="${x.id}">${esc(x.titulo)}</button></li>`).join('')}</ul>` : '<p class="muted small">Sin tareas.</p>'}` : ''}
+      ${c.tareas ? `<h4>Tareas</h4>${ts.length ? `<ul class="dp-tasks">${ts.map(x => `<li class="${x.hecha ? 'done' : ''}"><i class="est ${x.estado}" title="${Tareas.ESTADO[x.estado]}"></i><i class="prio ${x.prioridad}"></i><button class="linkbtn" data-tarea="${x.id}">${esc(x.titulo)}</button></li>`).join('')}</ul>` : '<p class="muted small">Sin tareas.</p>'}` : ''}
       <div class="dp-acts"><button class="btn sm" data-tarea-dia>+ Tarea este día</button>
       ${emp ? `<button class="btn ghost sm" data-quitar-emp>Quitar festivo de empresa</button>` : `<button class="btn ghost sm" data-add-emp>Marcar festivo de empresa</button>`}</div>
     </div>`;

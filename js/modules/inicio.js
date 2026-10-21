@@ -31,15 +31,15 @@ const ModInicio = (() => {
       </div></div>`;
   }
   function filaTarea(t) {
-    const d = Fecha.parse(t.fecha), hoy = Fecha.hoy();
-    return `<li class="task${t.hecha ? ' done' : ''}" data-id="${t.id}">
-      <button class="chk" aria-label="Completar: ${esc(t.titulo)}" aria-pressed="${!!t.hecha}"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></button>
+    const d = t.fecha ? Fecha.parse(t.fecha) : null, hoy = Fecha.hoy();
+    return `<li class="task est-${t.estado}${t.hecha ? ' done' : ''}" data-id="${t.id}">
+      <button class="st st-${t.estado} st-min" data-st aria-label="Estado: ${Tareas.ESTADO[t.estado]}. Pulsa para cambiarlo" title="${Tareas.ESTADO[t.estado]} · pulsa para avanzar"><i></i><span>${Tareas.ESTADO[t.estado]}</span></button>
       <i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i>
-      <button class="tt tt-btn" data-edit>${esc(t.titulo)}<small>${d === hoy ? 'Hoy' : Fecha.corta(d)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}</small></button></li>`;
+      <button class="tt tt-btn" data-edit>${esc(t.titulo)}<small>${d === null ? 'Sin fecha' : d === hoy ? 'Hoy' : Fecha.corta(d)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}</small></button></li>`;
   }
   function bTareas() {
     const p = Tareas.pendientes();
-    const g = [['Vencidas', p.vencidas, 'late'], ['Hoy', p.hoy, ''], ['Próximas', p.proximas.sort((a, b) => a.fecha.localeCompare(b.fecha)).slice(0, 4), '']]
+    const g = [['Vencidas', p.vencidas, 'late'], ['Hoy', p.hoy, ''], ['Próximas', p.proximas.slice(0, 4), ''], ['Recordatorios', p.sinFecha.slice(0, 3), '']]
       .filter(x => x[1].length).map(([n, l, c]) => `<div class="tgroup ${c}">${n}</div><ul class="tasks">${l.map(filaTarea).join('')}</ul>`).join('');
     return `<div class="card"><div class="card-h"><h3>Tareas</h3><button class="linkbtn" data-new-task>+ Nueva</button></div>
       ${g || '<p class="muted" style="margin:0">Todo al día. Apunta tareas con el botón amarillo <b>+</b>.</p>'}</div>`;
@@ -88,7 +88,7 @@ const ModInicio = (() => {
     $('#editBtn').onclick = () => { editando = !editando; render(main); if (!editando) Ficus.decir('Panel guardado a tu gusto. Como yo con mi maceta.', 'yay'); };
     home.addEventListener('click', e => {
       const add = e.target.closest('[data-add]'); if (add) { setLayout([...L, add.dataset.add]); render(main); return; }
-      const chk = e.target.closest('.chk'); if (chk) { completar(Number(chk.closest('.task').dataset.id), chk.closest('.task')); return; }
+      const st = e.target.closest('[data-st]'); if (st) { avanzar(Number(st.closest('.task').dataset.id)); return; }
       const ed = e.target.closest('.task [data-edit]'); if (ed) { const t = Tareas.todas().find(x => x.id === Number(ed.closest('.task').dataset.id)); if (t) Tareas.abrir({ tarea: t }); return; }
       const w = e.target.closest('.w'); if (!w) return;
       if (e.target.closest('[data-remove]')) { setLayout(L.filter(k => k !== w.dataset.w)); render(main); return; }
@@ -109,15 +109,17 @@ const ModInicio = (() => {
     });
   }
 
-  function completar(id, li) {
-    const t = Tareas.alternar(id); if (!t) return;
-    li.classList.toggle('done', t.hecha); li.querySelector('.chk').setAttribute('aria-pressed', t.hecha);
+  /* Botón de estado en el panel: pendiente → en proceso → terminado. */
+  function avanzar(id) {
+    const t = Tareas.avanzar(id); if (!t) return;
     Shell.pintarNav();
     if (t.hecha) {
       const p = Tareas.pendientes(), quedan = p.hoy.length + p.vencidas.length;
-      Ficus.decir(quedan ? `¡Hecha! Te quedan ${quedan} para hoy.` : '¡Todo lo de hoy, listo! Me voy a hacer la fotosíntesis tranquilo.', 'yay');
+      Ficus.decir(quedan ? `¡Terminada! Te quedan ${quedan} para hoy.` : '¡Todo lo de hoy, listo! Me voy a hacer la fotosíntesis tranquilo.', 'yay');
       if (t.siguiente) toast(`Siguiente repetición creada: ${Fecha.corta(Fecha.parse(t.siguiente))}`);
-    }
+    } else Tareas.celebrar(t);
+    const li = $(`.task[data-id="${id}"]`);
+    if (li) { li.className = `task est-${t.estado}${t.hecha ? ' done' : ''}`; const b = $('[data-st]', li); b.className = `st st-${t.estado} st-min`; b.querySelector('span').textContent = Tareas.ESTADO[t.estado]; b.setAttribute('aria-label', `Estado: ${Tareas.ESTADO[t.estado]}. Pulsa para cambiarlo`); }
   }
 
   return { render, reset: () => setLayout(POR_DEFECTO) };

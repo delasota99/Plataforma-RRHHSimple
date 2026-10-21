@@ -3,7 +3,7 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.2.0 · fase 2';
+  const VERSION = '0.2.1 · fase 2';
   const NAV = [
     ['', [['inicio', 'Inicio']]],
     ['Personas', [['empleados', 'Empleados'], ['altas', 'Altas']]],

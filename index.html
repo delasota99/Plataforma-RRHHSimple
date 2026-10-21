@@ -86,8 +86,15 @@
           <input type="radio" name="p" id="pM" value="media" checked><label for="pM"><i class="prio media"></i>Media</label>
           <input type="radio" name="p" id="pB" value="baja"><label for="pB"><i class="prio baja"></i>Baja</label>
         </div></div>
+      <div><span class="flabel">Estado</span>
+        <div class="prio-pick est-pick">
+          <input type="radio" name="e" id="eP" value="pendiente" checked><label for="eP"><i class="est pendiente"></i>Pendiente</label>
+          <input type="radio" name="e" id="eE" value="proceso"><label for="eE"><i class="est proceso"></i>En proceso</label>
+          <input type="radio" name="e" id="eT" value="terminado"><label for="eT"><i class="est terminado"></i>Terminado</label>
+        </div></div>
       <div class="row2">
-        <div class="field"><label for="tDate">Fecha</label><input type="date" id="tDate"></div>
+        <div class="field"><label for="tDate">Fecha <span class="muted" style="font-weight:400">(opcional)</span></label><input type="date" id="tDate">
+          <div class="quick-dates"><button type="button" data-fecha-rapida="0">Hoy</button><button type="button" data-fecha-rapida="1">Mañana</button><button type="button" data-fecha-rapida="-1">Sin fecha</button></div></div>
         <div class="field"><label for="tRep">Se repite</label><select id="tRep"><option value="">No</option><option value="semana">Cada semana</option><option value="mes">Cada mes</option><option value="anio">Cada año</option></select></div>
       </div>
     </div>
