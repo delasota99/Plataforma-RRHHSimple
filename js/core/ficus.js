@@ -21,6 +21,18 @@ const Ficus = (() => {
       'Si alguien ha disfrutado más días de los generados y se va, la diferencia se descuenta en el finiquito.',
       'Las vacaciones no disfrutadas por IT pueden usarse hasta 18 meses después del final de su año.'
     ],
+    tareas: [
+      'Las tareas que se repiten crean la siguiente al completarlas. Ideal para el TC de cada mes.',
+      'Pulsa el calendario de una tarea para descargarla y añadirla a Outlook: así te avisa aunque cierres la plataforma.',
+      '¿Te has equivocado al borrar? Tienes unos segundos para pulsar “Deshacer”.',
+      'Pulsa el título de una tarea para editarla y añadirle una nota.'
+    ],
+    calendario: [
+      'Activa Madrid, Talavera o Valencia arriba: se suman los festivos de la comunidad y de la ciudad.',
+      'Pulsa un día para ver sus festivos y tareas, o para crear una tarea justo ese día.',
+      'Los festivos de empresa se guardan por año. Nochebuena y Nochevieja, por ejemplo.',
+      'Recuerda: este calendario es informativo. Las calculadoras no lo usan para contar días.'
+    ],
     ajustes: [
       'Vincula un archivo de copia y guardaré cada cambio automáticamente. Si está en OneDrive, mejor aún.',
       'Si cambias de ordenador, exporta una copia y la importas en el nuevo. Así de fácil.'

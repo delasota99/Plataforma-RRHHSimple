@@ -79,6 +79,7 @@
     <div class="dlg-b">
       <h2 id="tdT" style="font-size:20px;font-weight:600">Nueva tarea</h2>
       <div class="field"><label for="tTitle">Qué hay que hacer</label><input id="tTitle" required maxlength="160" placeholder="p. ej., Enviar TC a la gestoría"></div>
+      <div class="field"><label for="tNota">Nota <span class="muted" style="font-weight:400">(opcional)</span></label><textarea id="tNota" rows="2" maxlength="1000" placeholder="Detalles, a quién afecta, enlaces…"></textarea></div>
       <div><span class="flabel">Importancia</span>
         <div class="prio-pick">
           <input type="radio" name="p" id="pA" value="alta"><label for="pA"><i class="prio alta"></i>Alta</label>
@@ -90,7 +91,7 @@
         <div class="field"><label for="tRep">Se repite</label><select id="tRep"><option value="">No</option><option value="semana">Cada semana</option><option value="mes">Cada mes</option><option value="anio">Cada año</option></select></div>
       </div>
     </div>
-    <div class="dlg-f"><button class="btn ghost" value="cancel" formnovalidate>Cancelar</button><button class="btn" value="ok">Añadir tarea</button></div>
+    <div class="dlg-f"><button class="btn ghost danger" value="del" id="tDel" formnovalidate hidden style="margin-right:auto">Eliminar</button><button class="btn ghost" value="cancel" formnovalidate>Cancelar</button><button class="btn" value="ok" id="tOk">Añadir tarea</button></div>
   </form>
 </dialog>
 
@@ -102,15 +103,19 @@
   </div>
 </dialog>
 
-<div class="toast" id="toast" hidden role="status"><svg class="i" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span id="toastTxt"></span></div>
+<div class="toast" id="toast" hidden role="status"><svg class="i" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span id="toastTxt"></span><button id="toastBtn" class="toast-btn" hidden></button></div>
 
 <script src="js/params.js"></script>
 <script src="js/core/util.js"></script>
 <script src="js/core/datos.js"></script>
-<script src="js/core/tareas.js"></script>
 <script src="js/engines/vacaciones.js"></script>
+<script src="js/engines/tareas.js"></script>
+<script src="js/engines/festivos.js"></script>
+<script src="js/core/tareas.js"></script>
 <script src="js/core/ficus.js"></script>
 <script src="js/modules/inicio.js"></script>
+<script src="js/modules/tareas.js"></script>
+<script src="js/modules/calendario.js"></script>
 <script src="js/modules/vacaciones.js"></script>
 <script src="js/modules/ajustes.js"></script>
 <script src="js/core/shell.js"></script>

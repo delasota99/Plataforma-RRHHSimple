@@ -3,7 +3,7 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.1.0 · fase 1';
+  const VERSION = '0.2.0 · fase 2';
   const NAV = [
     ['', [['inicio', 'Inicio']]],
     ['Personas', [['empleados', 'Empleados'], ['altas', 'Altas']]],
@@ -12,8 +12,8 @@ const Shell = (() => {
     ['', [['ajustes', 'Ajustes']]]
   ];
   const ETIQ = Object.fromEntries(NAV.flatMap(g => g[1]));
-  const MODULOS = { inicio: ModInicio, vacaciones: ModVacaciones, ajustes: ModAjustes };
-  const FASE = { tareas: 2, calendario: 2, empleados: 3, altas: 3, documentos: 4, salarios: 5, permisos: 5, nacimiento: 5, indemnizacion: 5, finiquito: 5 };
+  const MODULOS = { inicio: ModInicio, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, ajustes: ModAjustes };
+  const FASE = { empleados: 3, altas: 3, documentos: 4, salarios: 5, permisos: 5, nacimiento: 5, indemnizacion: 5, finiquito: 5 };
   const main = $('#main');
   const ruta = () => { const r = location.hash.slice(1); return r in ETIQ ? r : 'inicio'; };
 
@@ -36,7 +36,7 @@ const Shell = (() => {
     const r = ruta(); marcar();
     if (MODULOS[r]) MODULOS[r].render(main);
     else main.innerHTML = `<div class="view empty"><div><div class="ico">${icon(r)}</div><h1 style="font-size:30px;font-weight:600">${esc(ETIQ[r])}</h1>
-      <p>Ya está definida y llega en la <b>fase ${FASE[r]}</b>.${r === 'tareas' ? ' De momento puedes crear y completar tareas desde el panel de inicio y con el botón +.' : ''}</p>
+      <p>Ya está definida y llega en la <b>fase ${FASE[r]}</b>.</p>
       <a class="btn" href="#inicio">Volver al inicio</a></div></div>`;
     document.title = `${ETIQ[r]} · RRHH Simple`;
     window.scrollTo({ top: 0 }); cerrarMenu(); Ficus.ruta(r);
@@ -68,18 +68,9 @@ const Shell = (() => {
     } catch (e) { toast('No se pudo guardar la copia'); }
   }
 
-  /* ---------- Nueva tarea ---------- */
-  const dlg = $('#taskDlg');
-  function abrirTarea() { cerrarMenu(); $('#taskForm').reset(); $('#tDate').value = Fecha.iso(Fecha.hoy()); dlg.showModal(); $('#tTitle').focus(); }
-  dlg.addEventListener('close', () => {
-    if (dlg.returnValue !== 'ok') return;
-    const titulo = $('#tTitle').value.trim(); if (!titulo) return;
-    Tareas.crear({ titulo, prioridad: $('input[name=p]:checked').value, fecha: $('#tDate').value || Fecha.iso(Fecha.hoy()), repite: $('#tRep').value });
-    pintarNav(); toast('Tarea añadida');
-    if (ruta() === 'inicio') render();
-    Ficus.decir('Apuntado. Yo no tengo memoria, pero tú ya tienes la tarea.', 'yay');
-  });
-  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close('cancel'); });
+  /* ---------- Tareas: al crear, editar o borrar se refresca la vista ---------- */
+  function abrirTarea() { cerrarMenu(); Tareas.abrir(); }
+  Tareas.alCambiar(() => { pintarNav(); if (['inicio', 'tareas', 'calendario'].includes(ruta())) { const y = scrollY; MODULOS[ruta()].render(main); scrollTo(0, y); } });
 
   /* ---------- Buscador Ctrl + K (sin animación: se abre con teclado) ---------- */
   const cmdk = $('#cmdk'), cIn = $('#cmdIn'), cList = $('#cmdList');
@@ -87,6 +78,8 @@ const Shell = (() => {
   const ACCIONES = [
     { l: 'Nueva tarea', h: 'Acción', run: abrirTarea },
     { l: 'Guardar copia de seguridad', h: 'Acción', run: guardarCopia },
+    { l: 'Exportar tareas al calendario (.ics)', h: 'Acción', run: () => Tareas.descargarIcs(Tareas.todas().filter(t => !t.hecha), 'tareas-pendientes') },
+    { l: 'Añadir festivo de empresa', h: 'Acción', run: () => { location.hash = '#calendario'; setTimeout(() => $('#empF')?.focus(), 80); } },
     { l: 'Modo oscuro', h: 'Acción', run: () => setTema('dark') },
     { l: 'Modo claro', h: 'Acción', run: () => setTema('light') },
     { l: 'Personalizar el panel', h: 'Acción', run: () => { location.hash = '#inicio'; setTimeout(() => $('#editBtn')?.click(), 50); } }
@@ -134,7 +127,7 @@ const Shell = (() => {
   async function arrancar() {
     await Datos.init();
     Datos.on(k => { if (k === '_ultimaCopia' || k === '_estado') pintarCopia(); });
-    setTema(tema()); Ficus.init(); pintarCopia(); pintarNav(); render(); Ficus.saludar();
+    setTema(tema()); Ficus.init(); pintarCopia(); pintarNav(); render(); Ficus.saludar(); Tareas.comprobarAvisos();
     if (Datos.estado.fallo) toast('Este navegador no permite guardar datos: los cambios se perderán al cerrar.');
   }
   return { VERSION, etiqueta: r => ETIQ[r] || r, pintarNav, tema, setTema, arrancar };

@@ -2,7 +2,7 @@
 const $ = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
 const DAY = 86400000;
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const Fecha = {
   hoy() { const d = new Date(); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); },
@@ -36,9 +36,13 @@ function countTo(el, to) {
 }
 
 let _toastT;
-function toast(msg) {
-  const t = $('#toast'); $('#toastTxt').textContent = msg; t.hidden = false;
-  clearTimeout(_toastT); _toastT = setTimeout(() => t.hidden = true, 2800);
+/* Aviso breve. Opcionalmente con una acción, p. ej. { texto: 'Deshacer', fn }. */
+function toast(msg, accion = null) {
+  const t = $('#toast'), b = $('#toastBtn');
+  $('#toastTxt').textContent = msg; t.hidden = false;
+  b.hidden = !accion;
+  if (accion) { b.textContent = accion.texto; b.onclick = () => { t.hidden = true; accion.fn(); }; }
+  clearTimeout(_toastT); _toastT = setTimeout(() => t.hidden = true, accion ? 6000 : 2800);
 }
 
 /* Iconos (trazos 24×24). */

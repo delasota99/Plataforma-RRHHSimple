@@ -15,13 +15,9 @@ const ModInicio = (() => {
   const layout = () => Datos.get('panel', POR_DEFECTO).filter(k => k in BLOQUES);
   const setLayout = l => Datos.set('panel', l);
 
-  function proxFestivos() {
-    const hoy = Fecha.hoy();
-    return Object.values(P.festivos).flatMap(a => a.nacionales).map(([f, n]) => ({ t: Fecha.parse(f), n })).filter(x => x.t >= hoy).sort((a, b) => a.t - b.t);
-  }
 
   function bSaludo() {
-    const now = new Date(), h = now.getHours(), p = Tareas.pendientes(), f = proxFestivos()[0];
+    const now = new Date(), h = now.getHours(), p = Tareas.pendientes(), f = ModCalendario.proximos(1)[0];
     return `<div class="hello">
       <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
       <div style="position:relative">
@@ -31,7 +27,7 @@ const ModInicio = (() => {
       <div class="sum">
         <a class="pillstat" href="#tareas"><b>${p.hoy.length}</b><span>tareas<br>para hoy</span></a>
         <a class="pillstat" href="#tareas"><b>${p.vencidas.length}</b><span>tareas<br>vencidas</span></a>
-        <a class="pillstat" href="#calendario"><b>${f ? Fecha.corta(f.t) : '—'}</b><span>próximo<br>festivo</span></a>
+        <a class="pillstat" href="#calendario"><b>${f ? Fecha.corta(Fecha.parse(f.fecha)) : '—'}</b><span>próximo<br>festivo</span></a>
       </div></div>`;
   }
   function filaTarea(t) {
@@ -39,7 +35,7 @@ const ModInicio = (() => {
     return `<li class="task${t.hecha ? ' done' : ''}" data-id="${t.id}">
       <button class="chk" aria-label="Completar: ${esc(t.titulo)}" aria-pressed="${!!t.hecha}"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></button>
       <i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i>
-      <span class="tt">${esc(t.titulo)}<small>${d === hoy ? 'Hoy' : Fecha.corta(d)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}</small></span></li>`;
+      <button class="tt tt-btn" data-edit>${esc(t.titulo)}<small>${d === hoy ? 'Hoy' : Fecha.corta(d)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}</small></button></li>`;
   }
   function bTareas() {
     const p = Tareas.pendientes();
@@ -49,10 +45,10 @@ const ModInicio = (() => {
       ${g || '<p class="muted" style="margin:0">Todo al día. Apunta tareas con el botón amarillo <b>+</b>.</p>'}</div>`;
   }
   function bFestivos() {
-    const l = proxFestivos().slice(0, 4);
-    return `<div class="card"><div class="card-h"><h3>Próximos festivos</h3><span class="ex">nacionales</span></div><ul class="fest">` +
-      l.map(x => `<li><div class="cal"><small>${Fecha.mesCorto(x.t)}</small><b>${new Date(x.t).getUTCDate()}</b></div><div class="t">${esc(x.n)}<span>${Fecha.diaSemana(x.t)}</span></div></li>`).join('') +
-      `</ul>${l.length ? '' : '<p class="muted">Sin datos. Añade el calendario del año en parámetros.</p>'}</div>`;
+    const l = ModCalendario.proximos(4);
+    return `<div class="card"><div class="card-h"><h3>Próximos festivos</h3><a href="#calendario">Calendario</a></div><ul class="fest">` +
+      l.map(x => { const t = Fecha.parse(x.fecha); return `<li><div class="cal"><small>${Fecha.mesCorto(t)}</small><b>${new Date(t).getUTCDate()}</b></div><div class="t">${esc(x.items[0].nombre)}<span>${Fecha.diaSemana(t)}</span>${x.items.map(i => `<span class="chip-c tag-${i.capa}">${ModCalendario.etiquetaCapa(i.capa, i.ambito)}</span>`).join(' ')}</div></li>`; }).join('') +
+      `</ul>${l.length ? '' : '<p class="muted">Sin datos de festivos para las próximas fechas.</p>'}</div>`;
   }
   function bAnio() {
     const y = new Date().getFullYear(), hoy = Fecha.hoy(), pct = (hoy - Date.UTC(y, 0, 1) + DAY) / (Date.UTC(y + 1, 0, 1) - Date.UTC(y, 0, 1));
@@ -93,6 +89,7 @@ const ModInicio = (() => {
     home.addEventListener('click', e => {
       const add = e.target.closest('[data-add]'); if (add) { setLayout([...L, add.dataset.add]); render(main); return; }
       const chk = e.target.closest('.chk'); if (chk) { completar(Number(chk.closest('.task').dataset.id), chk.closest('.task')); return; }
+      const ed = e.target.closest('.task [data-edit]'); if (ed) { const t = Tareas.todas().find(x => x.id === Number(ed.closest('.task').dataset.id)); if (t) Tareas.abrir({ tarea: t }); return; }
       const w = e.target.closest('.w'); if (!w) return;
       if (e.target.closest('[data-remove]')) { setLayout(L.filter(k => k !== w.dataset.w)); render(main); return; }
       const mv = e.target.closest('[data-move]');
@@ -119,7 +116,7 @@ const ModInicio = (() => {
     if (t.hecha) {
       const p = Tareas.pendientes(), quedan = p.hoy.length + p.vencidas.length;
       Ficus.decir(quedan ? `¡Hecha! Te quedan ${quedan} para hoy.` : '¡Todo lo de hoy, listo! Me voy a hacer la fotosíntesis tranquilo.', 'yay');
-      if (t.repite) toast(`Siguiente repetición creada: ${Fecha.corta(Fecha.sumar(Fecha.parse(t.fecha), t.repite))}`);
+      if (t.siguiente) toast(`Siguiente repetición creada: ${Fecha.corta(Fecha.parse(t.siguiente))}`);
     }
   }
 

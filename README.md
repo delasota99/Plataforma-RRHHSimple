@@ -32,7 +32,7 @@ js/params.js            ÚNICO archivo de parámetros legales (convenio, tablas,
 js/engines/             Motores de cálculo: funciones puras, sin interfaz, con pruebas
 js/core/                Estructura común: datos y copias, tareas, asistente Ficus, navegación
 js/modules/             Pantallas (inicio, vacaciones, ajustes…)
-tests/                  Pruebas de los motores (node tests/vacaciones.test.js)
+tests/                  Pruebas de los motores (node tests/vacaciones.test.js, tareas.test.js, festivos.test.js)
 docs/                   Licencias de las tipografías
 ```
 
@@ -45,7 +45,7 @@ Convenio colectivo estatal de industrias de alimentos compuestos para animales (
 | Fase | Contenido | Estado |
 |---|---|---|
 | 1. Base | Estructura, panel con bloques, tema, buscador, tareas básicas, copias, parámetros, Ficus, vacaciones | ✅ |
-| 2. Organización | Tareas completas y calendario de festivos | Pendiente |
+| 2. Organización | Tareas completas (editar, notas, filtros, avisos, exportar a Outlook/Google) y calendario de festivos (Madrid, Talavera, Valencia y empresa) | ✅ |
 | 3. Personas | Empleados (cifrado) y seguimiento de altas | Pendiente |
 | 4. Documentos | Generador con las 6 plantillas | Pendiente |
 | 5. Calculadoras | Salarios, permisos, nacimiento, indemnización, finiquito | Pendiente |

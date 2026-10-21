@@ -103,7 +103,17 @@ window.RRHH_PARAMS = {
     { puesto:'Técnico/a PRL', categoria:'A2' }
   ],
 
-  /* Festivos nacionales comunes. Las capas autonómicas y locales llegan en la fase 2. */
+  /*
+   * FESTIVOS. Cada año: nacionales comunes + capas (comunidad + municipio).
+   * En cada capa, "dias" es la lista completa de la comunidad tal como la publica su boletín;
+   * la plataforma marca como "autonómico" lo que no está en la lista nacional.
+   * Para añadir un año nuevo: copia un bloque, cambia fechas y fuentes. Los locales se publican más tarde.
+   */
+  capasFestivos: {
+    madrid: { nombre: 'Madrid', comunidad: 'Comunidad de Madrid', municipio: 'Madrid capital' },
+    clm:    { nombre: 'Talavera', comunidad: 'Castilla-La Mancha', municipio: 'Talavera de la Reina' },
+    cv:     { nombre: 'Valencia', comunidad: 'Comunitat Valenciana', municipio: 'València' }
+  },
   festivos: {
     2026: {
       fuente: 'BOE-A-2025-21667 (Resolución de 17/10/2025, BOE 28/10/2025)',
@@ -112,7 +122,24 @@ window.RRHH_PARAMS = {
         ['2026-05-01','Fiesta del Trabajo'], ['2026-08-15','Asunción de la Virgen'], ['2026-10-12','Fiesta Nacional de España'],
         ['2026-12-08','Inmaculada Concepción'], ['2026-12-25','Natividad del Señor']
       ],
-      nota: '1 de noviembre y 6 de diciembre caen en domingo: cada comunidad decide si los traslada al lunes.'
+      nota: '1 de noviembre y 6 de diciembre caen en domingo: cada comunidad decide si los traslada.',
+      capas: {
+        madrid: {
+          fuente: 'Decreto 75/2025, de 24 de septiembre (BOCM 25/09/2025)',
+          dias: [['2026-01-01','Año Nuevo'],['2026-01-06','Epifanía del Señor'],['2026-04-02','Jueves Santo'],['2026-04-03','Viernes Santo'],['2026-05-01','Fiesta del Trabajo'],['2026-05-02','Fiesta de la Comunidad de Madrid'],['2026-08-15','Asunción de la Virgen'],['2026-10-12','Fiesta Nacional de España'],['2026-11-02','Todos los Santos (trasladado)'],['2026-12-07','Día de la Constitución (trasladado)'],['2026-12-08','Inmaculada Concepción'],['2026-12-25','Natividad del Señor']],
+          local: { fuente: 'Pleno del Ayuntamiento de Madrid, 30/09/2025', dias: [['2026-05-15','San Isidro Labrador'],['2026-11-09','Nuestra Señora de la Almudena']] }
+        },
+        clm: {
+          fuente: 'Decreto 44/2025, de 17 de junio (DOCM)',
+          dias: [['2026-01-01','Año Nuevo'],['2026-01-06','Epifanía del Señor'],['2026-04-02','Jueves Santo'],['2026-04-03','Viernes Santo'],['2026-04-06','Lunes de Pascua (sustituye a San José)'],['2026-05-01','Fiesta del Trabajo'],['2026-06-04','Corpus Christi (sustituye al 6 de diciembre)'],['2026-08-15','Asunción de la Virgen'],['2026-10-12','Fiesta Nacional de España'],['2026-11-02','Todos los Santos (trasladado)'],['2026-12-08','Inmaculada Concepción'],['2026-12-25','Natividad del Señor']],
+          local: { fuente: 'Pleno municipal de Talavera de la Reina (fiestas locales 2026)', dias: [['2026-05-15','Fiesta local'],['2026-09-08','Fiesta local']] }
+        },
+        cv: {
+          fuente: 'Decreto 100/2025, de 1 de julio, del Consell (DOGV 07/07/2025)',
+          dias: [['2026-01-01','Año Nuevo'],['2026-01-06','Epifanía del Señor'],['2026-03-19','San José'],['2026-04-03','Viernes Santo'],['2026-04-06','Lunes de Pascua'],['2026-05-01','Fiesta del Trabajo'],['2026-06-24','San Juan'],['2026-08-15','Asunción de la Virgen'],['2026-10-09','Día de la Comunitat Valenciana'],['2026-10-12','Fiesta Nacional de España'],['2026-12-08','Inmaculada Concepción'],['2026-12-25','Natividad del Señor']],
+          local: { fuente: 'Ayuntamiento de València (fiestas locales 2026)', dias: [['2026-01-22','San Vicente Mártir'],['2026-04-13','San Vicente Ferrer']] }
+        }
+      }
     },
     2027: {
       fuente: 'BOE-A-2026-21254 (Resolución de 08/10/2026, BOE 13/10/2026)',
@@ -120,7 +147,24 @@ window.RRHH_PARAMS = {
         ['2027-01-01','Año Nuevo'], ['2027-01-06','Epifanía del Señor'], ['2027-03-26','Viernes Santo'],
         ['2027-05-01','Fiesta del Trabajo'], ['2027-10-12','Fiesta Nacional de España'], ['2027-11-01','Todos los Santos'],
         ['2027-12-06','Día de la Constitución Española'], ['2027-12-08','Inmaculada Concepción'], ['2027-12-25','Natividad del Señor']
-      ]
+      ],
+      capas: {
+        madrid: {
+          fuente: 'Decreto 82/2026, de 30 de septiembre (BOCM 01/10/2026)',
+          dias: [['2027-01-01','Año Nuevo'],['2027-01-06','Epifanía del Señor'],['2027-03-19','San José'],['2027-03-25','Jueves Santo'],['2027-03-26','Viernes Santo'],['2027-05-01','Fiesta del Trabajo'],['2027-08-16','Asunción de la Virgen (trasladado)'],['2027-10-12','Fiesta Nacional de España'],['2027-11-01','Todos los Santos'],['2027-12-06','Día de la Constitución Española'],['2027-12-08','Inmaculada Concepción'],['2027-12-25','Natividad del Señor']],
+          local: { fuente: 'Pendiente de publicación', dias: [] }
+        },
+        clm: {
+          fuente: 'Decreto 34/2026, de 23 de junio (DOCM)',
+          dias: [['2027-01-01','Año Nuevo'],['2027-01-06','Epifanía del Señor'],['2027-03-25','Jueves Santo'],['2027-03-26','Viernes Santo'],['2027-05-01','Fiesta del Trabajo'],['2027-05-27','Corpus Christi (sustituye a San José)'],['2027-05-31','Día de Castilla-La Mancha (sustituye al 15 de agosto)'],['2027-10-12','Fiesta Nacional de España'],['2027-11-01','Todos los Santos'],['2027-12-06','Día de la Constitución Española'],['2027-12-08','Inmaculada Concepción'],['2027-12-25','Natividad del Señor']],
+          local: { fuente: 'Pendiente de publicación', dias: [] }
+        },
+        cv: {
+          fuente: 'Acuerdo del Consell de marzo de 2026 (confirmar referencia en el DOGV)',
+          dias: [['2027-01-01','Año Nuevo'],['2027-01-06','Epifanía del Señor'],['2027-03-19','San José'],['2027-03-26','Viernes Santo'],['2027-03-29','Lunes de Pascua'],['2027-05-01','Fiesta del Trabajo'],['2027-10-09','Día de la Comunitat Valenciana'],['2027-10-12','Fiesta Nacional de España'],['2027-11-01','Todos los Santos'],['2027-12-06','Día de la Constitución Española'],['2027-12-08','Inmaculada Concepción'],['2027-12-25','Natividad del Señor']],
+          local: { fuente: 'Pendiente de publicación', dias: [] }
+        }
+      }
     }
   }
 };
