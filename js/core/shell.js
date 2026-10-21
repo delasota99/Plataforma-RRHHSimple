@@ -3,7 +3,7 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.3.0 · fase 3';
+  const VERSION = '0.3.1 · fase 3';
   const NAV = [
     ['', [['inicio', 'Inicio']]],
     ['Personas', [['empleados', 'Empleados'], ['altas', 'Altas']]],
@@ -91,7 +91,7 @@ const Shell = (() => {
     const q = norm(cIn.value.trim());
     const herramientas = Object.entries(ETIQ).map(([r, l]) => ({ l, h: MODULOS[r] ? 'Herramienta' : `Fase ${FASE[r]}`, r, run: () => location.hash = '#' + r }));
     const f = l => q ? l.filter(x => norm(x.l + ' ' + x.h).includes(q)) : l;
-    const emps = Empleados.desbloqueado ? Empleados.todos().map(e => ({ l: e.nombre, h: `${e.codigo} · ${e.departamento || e.centro || ''}`, r: 'empleados', run: () => { ModEmpleados.abrir(e.id); if (location.hash === '#empleados') render(); else location.hash = '#empleados'; } })) : [];
+    const emps = Empleados.desbloqueado ? Empleados.todos().map(e => ({ l: e.nombreCompleto, h: `${e.codigo} · ${e.departamento || e.centro || ''}`, r: 'empleados', run: () => { ModEmpleados.abrir(e.id); if (location.hash === '#empleados') render(); else location.hash = '#empleados'; } })) : [];
     const altas = Altas.enCurso().map(a => ({ l: `Alta de ${a.nombre}`, h: `${Math.round(MotorAltas.progreso(a).pct * 100)} % · ${a.centro}`, r: 'altas', run: () => { ModAltas.abrir(a.id); if (location.hash === '#altas') render(); else location.hash = '#altas'; } }));
     const secs = [['Herramientas', f(herramientas).slice(0, q ? 8 : 6)], ['Empleados', q ? f(emps).slice(0, 6) : []], ['Altas en curso', f(altas).slice(0, q ? 6 : 3)], ['Acciones', f(ACCIONES)]];
     items = secs.flatMap(s => s[1]); sel = Math.min(sel, Math.max(0, items.length - 1));

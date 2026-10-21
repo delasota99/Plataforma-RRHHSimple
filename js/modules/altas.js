@@ -74,7 +74,7 @@ const ModAltas = (() => {
       <div class="field"><label for="naNom">Nombre y apellidos</label><input id="naNom" required value="${esc(prefill.nombre || '')}"></div>
       <div class="row2"><div class="field"><label for="naCen">Centro</label><select id="naCen">${P.centros.map(c => `<option ${prefill.centro === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
         <div class="field"><label for="naPue">Puesto</label><input id="naPue" list="naPues" value="${esc(prefill.puesto || '')}"><datalist id="naPues">${puestos.map(p => `<option value="${esc(p)}">`).join('')}</datalist></div></div>
-      <div class="row2"><div class="field"><label for="naDep">Departamento</label><input id="naDep" value="${esc(prefill.departamento || '')}"></div>
+      <div class="row2"><div class="field"><label for="naDep">Departamento</label><select id="naDep"><option value="">Sin indicar</option>${P.departamentos.map(x => `<option ${prefill.departamento === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
         <div class="field"><label for="naSal">Salario bruto anual (€)</label><input id="naSal" inputmode="decimal" value="${esc(prefill.salario ?? '')}"></div></div>
       <div class="row2"><div class="field"><label for="naInc">Incorporación prevista</label><input type="date" id="naInc"></div>
         <div class="field"><label class="check" style="margin-top:30px"><input type="checkbox" id="naOf" ${prefill.ofertaEnviada ? 'checked' : ''}> Oferta ya enviada hoy</label></div></div>
@@ -85,7 +85,7 @@ const ModAltas = (() => {
     $('#naForm', d).onsubmit = e => {
       e.preventDefault();
       const sal = MotorEmpleados.importe($('#naSal', d).value), of = $('#naOf', d).checked;
-      const a = Altas.crear({ nombre: $('#naNom', d).value.trim(), centro: $('#naCen', d).value, puesto: $('#naPue', d).value.trim(), departamento: $('#naDep', d).value.trim(),
+      const a = Altas.crear({ nombre: $('#naNom', d).value.trim(), centro: $('#naCen', d).value, puesto: $('#naPue', d).value.trim(), departamento: $('#naDep', d).value,
         salario: sal === null ? '' : sal, fechaIncorporacion: $('#naInc', d).value, ...(of ? { check: { ofertaEnviada: true }, fechaOferta: hoyISO() } : {}) });
       d.close('ok'); Shell.pintarNav(); toast('Alta creada · tarea automática de documentación añadida');
       Ficus.decir('Alta en marcha. Te he apuntado una tarea con los documentos que faltan.', 'yay');
@@ -113,7 +113,7 @@ const ModAltas = (() => {
             <div class="field"><label for="dNom">Nombre y apellidos</label><input id="dNom" data-campo="nombre" value="${esc(a.nombre)}"></div>
             <div class="field"><label for="dCen">Centro</label><select id="dCen" data-campo="centro">${P.centros.map(c => `<option ${a.centro === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
             <div class="field"><label for="dPue">Puesto</label><input id="dPue" data-campo="puesto" list="dPues" value="${esc(a.puesto)}"><datalist id="dPues">${P.puestos.map(x => `<option value="${esc(x.puesto)}">`).join('')}</datalist></div>
-            <div class="field"><label for="dDep">Departamento</label><input id="dDep" data-campo="departamento" value="${esc(a.departamento)}"></div>
+            <div class="field"><label for="dDep">Departamento</label><select id="dDep" data-campo="departamento"><option value="">Sin indicar</option>${[...P.departamentos, ...(a.departamento && !P.departamentos.includes(a.departamento) ? [a.departamento] : [])].map(x => `<option ${a.departamento === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
             <div class="field"><label for="dSal">Salario bruto anual (€)</label><input id="dSal" data-campo="salario" inputmode="decimal" value="${a.salario === '' || a.salario == null ? '' : String(a.salario).replace('.', ',')}"></div>
             <div class="row2"><div class="field"><label for="dInc">Incorporación</label><input type="date" id="dInc" data-campo="fechaIncorporacion" value="${a.fechaIncorporacion || ''}"></div>
               <div class="field"><label for="dOf">Oferta enviada</label><input type="date" id="dOf" data-campo="fechaOferta" value="${a.fechaOferta || ''}"></div></div>
@@ -170,7 +170,7 @@ const ModAltas = (() => {
     }
     if (!Empleados.desbloqueado && !(await pedirPassword())) return;
     ModEmpleados.ficha(null, null, {
-      prefill: { nombre: a.nombre, centro: a.centro, puesto: a.puesto, departamento: a.departamento, salario: a.salario, fechaContratacion: a.fechaIncorporacion },
+      prefill: { ...MotorEmpleados.partirNombre(a.nombre), centro: a.centro, puesto: a.puesto, departamento: a.departamento, salario: a.salario, fechaContratacion: a.fechaIncorporacion },
       alGuardar: emp => { Altas.editar(a.id, { cerrada: true, fechaCierre: hoyISO(), empleadoId: emp.id }); Shell.pintarNav(); detalle(main); Ficus.decir(`¡Bienvenida a ${emp.nombre.split(' ')[0]}! Alta cerrada y ficha creada.`, 'yay'); }
     });
   }

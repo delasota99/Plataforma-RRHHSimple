@@ -57,7 +57,7 @@ const ModEmpleados = (() => {
   function filas(l) {
     if (!l.length) return `<tr><td colspan="7" class="empty-row">${Empleados.todos().length ? 'Ningún empleado coincide con los filtros.' : 'Aún no hay empleados. Añádelos uno a uno o importa un CSV.'}</td></tr>`;
     return l.map(e => `<tr data-id="${e.id}" tabindex="0" class="${MotorEmpleados.activo(e, hoy()) ? '' : 'baja'}">
-      <td><span class="emp-cell"><span class="avatar">${esc(ini(e.nombre))}</span><span><b>${esc(e.nombre)}</b><small>${esc(e.codigo)}${e.fechaBaja ? ` · baja ${Fecha.larga(Fecha.parse(e.fechaBaja))}` : ''}</small></span></span></td>
+      <td><span class="emp-cell"><span class="avatar">${esc(ini(e.nombre + ' ' + e.apellido1))}</span><span><b>${esc(e.nombreCompleto)}</b><small>${esc(e.codigo)}${e.fechaBaja ? ` · baja ${Fecha.larga(Fecha.parse(e.fechaBaja))}` : ''}</small></span></span></td>
       <td>${esc(e.departamento || '—')}</td><td>${esc(e.responsable || '—')}</td><td>${esc(e.centro || '—')}</td><td>${esc(e.puesto || '—')}</td>
       <td>${e.fechaContratacion ? `${Fecha.larga(Fecha.parse(e.fechaContratacion))}<small>${antig(e.fechaContratacion)}</small>` : '—'}</td>
       <td class="num">${e.salario !== '' && e.salario != null ? euros(e.salario) : '—'}</td></tr>`).join('');
@@ -117,17 +117,20 @@ const ModEmpleados = (() => {
 
   /* ---------- Ficha (crear / editar) ---------- */
   function ficha(id, main, { prefill = null, alGuardar = null } = {}) {
-    const e = id ? Empleados.buscar(id) : { codigo: '', nombre: '', departamento: '', responsable: '', centro: P.centros[0], puesto: '', fechaContratacion: '', salario: '', fechaBaja: '', vacaciones: {}, ...(prefill || {}) };
+    const e = id ? Empleados.buscar(id) : { codigo: '', nombre: '', apellido1: '', apellido2: '', departamento: '', responsable: '', centro: P.centros[0], puesto: '', fechaContratacion: '', salario: '', fechaBaja: '', vacaciones: {}, ...(prefill || {}) };
     if (!e) return;
     const y = new Date().getFullYear(), todos = Empleados.todos();
     const dl = (idl, campo) => `<datalist id="${idl}">${MotorEmpleados.valores(todos, campo).map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
+    const deps = [...P.departamentos, ...(e.departamento && !P.departamentos.includes(e.departamento) ? [e.departamento] : [])];
     const puestos = [...new Set([...P.puestos.map(p => p.puesto), ...MotorEmpleados.valores(todos, 'puesto')])];
     const d = abrirModal(`<form id="fForm" novalidate>
       <div class="dlg-b">
-        <div class="ficha-h"><span class="avatar lg">${esc(ini(e.nombre) || '+')}</span><div><h2>${id ? esc(e.nombre) : 'Nuevo empleado'}</h2>${id ? `<span class="muted">${esc(e.codigo)} · ${antig(e.fechaContratacion)} en la empresa</span>` : '<span class="muted">Solo datos básicos para calcular y filtrar</span>'}</div></div>
+        <div class="ficha-h"><span class="avatar lg">${esc(ini([e.nombre, e.apellido1].join(' ').trim()) || '+')}</span><div><h2>${id ? esc(e.nombreCompleto) : 'Nuevo empleado'}</h2>${id ? `<span class="muted">${esc(e.codigo)} · ${antig(e.fechaContratacion)} en la empresa</span>` : '<span class="muted">Solo datos básicos para calcular y filtrar</span>'}</div></div>
         <div class="row2"><div class="field"><label for="fCod">Código de empleado</label><input id="fCod" value="${esc(e.codigo)}" required></div>
-          <div class="field"><label for="fNom">Nombre y apellidos</label><input id="fNom" value="${esc(e.nombre)}" required></div></div>
-        <div class="row2"><div class="field"><label for="fDepI">Departamento</label><input id="fDepI" list="dlDep" value="${esc(e.departamento)}">${dl('dlDep', 'departamento')}</div>
+          <div class="field"><label for="fNom">Nombre</label><input id="fNom" value="${esc(e.nombre)}" required autocomplete="off"></div></div>
+        <div class="row2"><div class="field"><label for="fAp1">Primer apellido</label><input id="fAp1" value="${esc(e.apellido1)}" required autocomplete="off"></div>
+          <div class="field"><label for="fAp2">Segundo apellido <span class="muted" style="font-weight:400">(opcional)</span></label><input id="fAp2" value="${esc(e.apellido2)}" autocomplete="off"></div></div>
+        <div class="row2"><div class="field"><label for="fDepI">Departamento</label><select id="fDepI"><option value="">Sin indicar</option>${deps.map(x => `<option ${e.departamento === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
           <div class="field"><label for="fRespI">Responsable</label><input id="fRespI" list="dlResp" value="${esc(e.responsable)}">${dl('dlResp', 'responsable')}</div></div>
         <div class="row2"><div class="field"><label for="fCen">Centro</label><select id="fCen">${P.centros.map(c => `<option ${e.centro === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}${e.centro && !P.centros.includes(e.centro) ? `<option selected>${esc(e.centro)}</option>` : ''}</select></div>
           <div class="field"><label for="fPue">Puesto</label><input id="fPue" list="dlPue" value="${esc(e.puesto)}"><datalist id="dlPue">${puestos.map(v => `<option value="${esc(v)}">`).join('')}</datalist></div></div>
@@ -145,7 +148,7 @@ const ModEmpleados = (() => {
     $('#fForm', d).onsubmit = async ev => {
       ev.preventDefault();
       const sal = MotorEmpleados.importe($('#fSal', d).value);
-      const nuevo = { codigo: $('#fCod', d).value.trim(), nombre: $('#fNom', d).value.trim(), departamento: $('#fDepI', d).value.trim(), responsable: $('#fRespI', d).value.trim(),
+      const nuevo = { codigo: $('#fCod', d).value.trim(), nombre: $('#fNom', d).value.trim(), apellido1: $('#fAp1', d).value.trim(), apellido2: $('#fAp2', d).value.trim(), departamento: $('#fDepI', d).value, responsable: $('#fRespI', d).value.trim(),
         centro: $('#fCen', d).value, puesto: $('#fPue', d).value.trim(), fechaContratacion: $('#fFc', d).value, salario: sal === null ? NaN : sal, fechaBaja: $('#fFb', d).value,
         vacaciones: { ...(e.vacaciones || {}), ...($('#fVac', d).value !== '' ? { [y]: Math.max(0, Math.floor(Number($('#fVac', d).value))) } : {}) } };
       const err = MotorEmpleados.validar({ ...nuevo, id }, Empleados.todos());
@@ -166,12 +169,12 @@ const ModEmpleados = (() => {
   }
 
   function previsualizarImport(texto, main) {
-    const r = MotorEmpleados.importarCSV(texto, Empleados.todos());
+    const r = MotorEmpleados.importarCSV(texto, Empleados.todos(), { departamentos: P.departamentos });
     const d = abrirModal(`<div class="dlg-b"><h2 style="font-size:20px;font-weight:600">Importar empleados</h2>
       <p><b>${r.empleados.length}</b> empleados listos para importar${r.errores.length ? ` · <b class="danger">${r.errores.length}</b> filas con errores (no se importarán)` : ''}.</p>
       ${r.errores.length ? `<ul class="imp-err">${r.errores.slice(0, 20).map(x => `<li>Fila ${x.fila}: ${x.mensajes.map(esc).join(' · ')}</li>`).join('')}${r.errores.length > 20 ? `<li>…y ${r.errores.length - 20} más</li>` : ''}</ul>` : ''}
-      ${r.empleados.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Nombre</th><th>Centro</th><th>Contratación</th></tr></thead><tbody>${r.empleados.slice(0, 8).map(e => `<tr><td>${esc(e.codigo)}</td><td>${esc(e.nombre)}</td><td>${esc(e.centro)}</td><td>${e.fechaContratacion ? Fecha.larga(Fecha.parse(e.fechaContratacion)) : ''}</td></tr>`).join('')}</tbody></table></div>${r.empleados.length > 8 ? `<p class="muted small">…y ${r.empleados.length - 8} más</p>` : ''}` : ''}
-      <p class="muted small">Columnas reconocidas: ${MotorEmpleados.COLUMNAS.join(', ')}. Separador ; o , · fechas dd/mm/aaaa.</p></div>
+      ${r.empleados.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Nombre</th><th>Departamento</th><th>Contratación</th></tr></thead><tbody>${r.empleados.slice(0, 8).map(e => `<tr><td>${esc(e.codigo)}</td><td>${esc(MotorEmpleados.nombreCompleto(e))}</td><td>${esc(e.departamento)}</td><td>${e.fechaContratacion ? Fecha.larga(Fecha.parse(e.fechaContratacion)) : ''}</td></tr>`).join('')}</tbody></table></div>${r.empleados.length > 8 ? `<p class="muted small">…y ${r.empleados.length - 8} más</p>` : ''}` : ''}
+      <p class="muted small">Columnas reconocidas: ${MotorEmpleados.COLUMNAS.join(', ')} (también vale una sola columna “nombre y apellidos”). Departamentos: ${P.departamentos.join(', ')}. Separador ; o , · fechas dd/mm/aaaa.</p></div>
       <div class="dlg-f"><button class="btn ghost" id="iCancel">Cancelar</button><button class="btn" id="iOk" ${r.empleados.length ? '' : 'disabled'}>Importar ${r.empleados.length}</button></div>`, { ancho: 680 });
     $('#iCancel', d).onclick = () => d.close('cancel');
     $('#iOk', d).onclick = async () => { const n = await Empleados.importar(r.empleados); d.close('ok'); toast(`${n} empleados importados`); Ficus.decir(`${n} fichas nuevas, todas cifradas. Buen trabajo.`, 'yay'); render(main); };

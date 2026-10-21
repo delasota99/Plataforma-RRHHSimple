@@ -123,12 +123,12 @@ const ModVacaciones = (() => {
     const caja = $('#empSel');
     if (!Empleados.configurado()) return;
     if (!Empleados.desbloqueado) { caja.innerHTML = `<div class="note">${icon('info')}<div>Para elegir a una persona, <a href="#empleados">desbloquea la base de empleados</a>.</div></div>`; return; }
-    const lista = Empleados.todos().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    const lista = MotorEmpleados.filtrar(Empleados.todos(), { estado: 'todos', hoy: Fecha.iso(Fecha.hoy()) });
     if (!lista.length) return;
     let modo = pendienteEmp ? 'emp' : 'man', empId = pendienteEmp || lista[0].id; pendienteEmp = null;
     caja.innerHTML = `<span class="flabel">Calcular para</span>
       <div class="seg" id="modeSeg"><span class="thumb"></span><button type="button" data-m="emp">Empleado</button><button type="button" data-m="man">Manual</button></div>
-      <div class="field" id="empField" style="margin-top:12px"><label for="v-emp" class="sr">Empleado</label><select id="v-emp">${lista.map(e => `<option value="${e.id}">${esc(e.nombre)} · ${esc(e.codigo)}${e.fechaBaja ? ' (baja)' : ''}</option>`).join('')}</select>
+      <div class="field" id="empField" style="margin-top:12px"><label for="v-emp" class="sr">Empleado</label><select id="v-emp">${lista.map(e => `<option value="${e.id}">${esc(e.nombreCompleto)} · ${esc(e.codigo)}${e.fechaBaja ? ' (baja)' : ''}</option>`).join('')}</select>
         <div class="emp-card" id="empCard"></div><button type="button" class="linkbtn" id="guardarCons" style="margin-top:8px">Guardar los días consumidos en su ficha</button></div>`;
     const seg = $('#modeSeg'), sel = $('#v-emp');
     const pintarModo = () => { $$('button', seg).forEach(b => b.setAttribute('aria-pressed', b.dataset.m === modo)); seg.querySelector('.thumb').style.transform = modo === 'man' ? 'translateX(100%)' : 'none'; $('#empField').hidden = modo === 'man'; };
@@ -136,7 +136,7 @@ const ModVacaciones = (() => {
       const e = Empleados.buscar(Number(sel.value)); if (!e) return;
       const anio = Number($('#v-anio').value) || new Date().getFullYear();
       $('#v-ini').value = e.fechaContratacion || ''; $('#v-fin').value = e.fechaBaja || ''; $('#v-cons').value = e.vacaciones?.[anio] ?? 0;
-      $('#empCard').innerHTML = `<span class="avatar">${esc(e.nombre.split(/\s+/).map(w => w[0]).slice(0, 2).join(''))}</span><span>${esc(e.departamento || '—')} · ${esc(e.centro || '—')}<span class="meta">Contratación ${e.fechaContratacion ? Fecha.larga(Fecha.parse(e.fechaContratacion)) : '—'}${e.fechaBaja ? ' · baja ' + Fecha.larga(Fecha.parse(e.fechaBaja)) : ''}</span></span>`;
+      $('#empCard').innerHTML = `<span class="avatar">${esc(((e.nombre[0] || '') + (e.apellido1[0] || '')).toUpperCase())}</span><span>${esc(e.departamento || '—')} · ${esc(e.centro || '—')}<span class="meta">Contratación ${e.fechaContratacion ? Fecha.larga(Fecha.parse(e.fechaContratacion)) : '—'}${e.fechaBaja ? ' · baja ' + Fecha.larga(Fecha.parse(e.fechaBaja)) : ''}</span></span>`;
       update();
     };
     sel.value = String(empId);
@@ -147,7 +147,7 @@ const ModVacaciones = (() => {
     $('#guardarCons').onclick = async () => {
       const id = Number(sel.value), e = Empleados.buscar(id), anio = Number($('#v-anio').value) || new Date().getFullYear();
       await Empleados.editarEmpleado(id, { vacaciones: { ...(e.vacaciones || {}), [anio]: Math.max(0, Math.floor(Number($('#v-cons').value) || 0)) } });
-      toast(`Guardado en la ficha de ${e.nombre}: ${$('#v-cons').value} días en ${anio}`);
+      toast(`Guardado en la ficha de ${e.nombreCompleto}: ${$('#v-cons').value} días en ${anio}`);
     };
     pintarModo(); if (modo === 'emp') rellenar();
   }

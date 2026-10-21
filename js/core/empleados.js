@@ -41,7 +41,7 @@ const Empleados = (() => {
     try {
       const s = deB64(b.sal), k = await derivar(password, s);
       const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(b.iv) }, k, deB64(b.datos));
-      lista = JSON.parse(new TextDecoder().decode(pt)); clave = k; sal = s;
+      lista = JSON.parse(new TextDecoder().decode(pt)).map(limpiar); clave = k; sal = s;
       programarBloqueo(); avisar(); return true;
     } catch (e) { return false; }
   }
@@ -53,17 +53,19 @@ const Empleados = (() => {
   }
 
   const nuevoId = () => Date.now() + Math.random();
-  async function crearEmpleado(e) { const n = { ...e, id: nuevoId(), vacaciones: e.vacaciones || {} }; lista.push(n); await guardar(); return n; }
-  async function editarEmpleado(id, cambios) { const e = lista.find(x => x.id === id); if (e) { Object.assign(e, cambios); await guardar(); } return e; }
+  /* Fichas antiguas con "nombre" completo se separan en nombre y apellidos; nombreCompleto no se guarda. */
+  const limpiar = e => { const n = MotorEmpleados.normalizar(e); delete n.nombreCompleto; return n; };
+  async function crearEmpleado(e) { const n = limpiar({ ...e, id: nuevoId(), vacaciones: e.vacaciones || {} }); lista.push(n); await guardar(); return MotorEmpleados.normalizar(n); }
+  async function editarEmpleado(id, cambios) { const e = lista.find(x => x.id === id); if (e) { Object.assign(e, cambios); delete e.nombreCompleto; await guardar(); } return e && MotorEmpleados.normalizar(e); }
   async function eliminarEmpleado(id) { const i = lista.findIndex(x => x.id === id); if (i < 0) return null; const [e] = lista.splice(i, 1); await guardar(); return e; }
   async function restaurar(e) { lista.push(e); await guardar(); }
-  async function importar(nuevos) { nuevos.forEach(e => lista.push({ ...e, id: nuevoId(), vacaciones: e.vacaciones || {} })); await guardar(); return nuevos.length; }
+  async function importar(nuevos) { nuevos.forEach(e => lista.push(limpiar({ ...e, id: nuevoId(), vacaciones: e.vacaciones || {} }))); await guardar(); return nuevos.length; }
 
   return {
     disponible, configurado, crear, desbloquear, bloquear, cambiarPassword,
     get desbloqueado() { return !!clave; },
-    todos: () => structuredClone(lista),
-    buscar: id => structuredClone(lista.find(e => e.id === id) || null),
+    todos: () => lista.map(e => MotorEmpleados.normalizar(structuredClone(e))),
+    buscar: id => { const e = lista.find(x => x.id === id); return e ? MotorEmpleados.normalizar(structuredClone(e)) : null; },
     crearEmpleado, editarEmpleado, eliminarEmpleado, restaurar, importar,
     on: fn => (oyentes.add(fn), () => oyentes.delete(fn))
   };
