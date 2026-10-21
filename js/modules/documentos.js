@@ -86,7 +86,7 @@ const ModDocumentos = (() => {
           ${p.campos.map(campo).join('')}
           <button type="button" class="linkbtn" id="limpiarDoc" style="align-self:flex-start">Vaciar el formulario</button>
         </form>
-        <div class="card" id="prev">${vista()}</div>
+        <div class="card live" id="prev">${vista()}</div>
       </div>
     </div>`;
     enlazar(main);

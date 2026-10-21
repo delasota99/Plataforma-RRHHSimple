@@ -40,6 +40,8 @@ window.RRHH_PARAMS = {
   preavisoBajaVoluntaria: {          // art. 29 convenio
     unMes: ['Técnico', 'Auxiliar de laboratorio', 'Informática', 'Administrativo', 'Comercial', 'Encargado/a de producción'],
     ochoDias: ['Producción (excepto encargados)', 'Mantenimiento y transporte', 'Subalterno'],
+    // Por categoría (tablas): un mes para grupos A, B, C, D, E y el encargado de producción (F2); ocho días para el resto.
+    unMesCategorias: ['A', 'B', 'C', 'D', 'E', 'F2'],
     sancion: 'Un día de salario por cada día de retraso en el aviso',
     fuente: 'Convenio, art. 29'
   },
@@ -126,6 +128,84 @@ window.RRHH_PARAMS = {
     { puesto:'Técnico/a de Regulación y etiquetado', categoria:'A2' },
     { puesto:'Técnico/a PRL', categoria:'A2' }
   ],
+
+  /* INDEMNIZACIONES por extinción del contrato. Salario diario = bruto anual ÷ 365; mensualidad = bruto anual ÷ 12.
+     Periodos inferiores al año: prorrateo por meses, y la fracción de mes cuenta como mes completo. */
+  indemnizacion: {
+    reforma2012: '2012-02-12',       // DT 11.ª ET: servicios anteriores, 45 días/año
+    tipos: {
+      improcedente: { nombre: 'Despido improcedente', dias: 33, topeMensualidades: 24, art: 'ET, art. 56.1 y DT 11.ª' },
+      objetivo:     { nombre: 'Despido objetivo o colectivo (ERE)', dias: 20, topeMensualidades: 12, art: 'ET, arts. 51.4 y 53.1.b' },
+      temporal:     { nombre: 'Fin de contrato temporal', dias: 12, topeMensualidades: null, art: 'ET, art. 49.1.c' },
+      modificacion: { nombre: 'Extinción por modificación sustancial', dias: 20, topeMensualidades: 9, art: 'ET, art. 41.3' },
+      traslado:     { nombre: 'Extinción por traslado', dias: 20, topeMensualidades: 12, art: 'ET, art. 40.1' }
+    },
+    anterior2012: { dias: 45, topeDias: 720, topeMensualidades: 42 },
+    verificado: '2026-10-21'
+  },
+
+  /* PERMISOS RETRIBUIDOS: convenio (art. 14) frente a ET (art. 37). Se aplica el más favorable.
+     dias: base · desplaz: días extra si hay desplazamiento · lejos: extra si la celebración es a más de 100 km. */
+  permisos: [
+    { id:'matrimonio', nombre:'Matrimonio o registro de pareja de hecho', unidad:'días naturales',
+      et:{ dias:15, art:'ET 37.3.a' }, conv:{ dias:15, art:'Convenio 14.1.a' },
+      nota:'Puede sumarse a las vacaciones (convenio). La pareja estable con convivencia acreditada tiene los mismos derechos (convenio 14.4).' },
+    { id:'enfermedad', nombre:'Accidente o enfermedad grave, hospitalización o intervención con reposo de un familiar', unidad:'días', desplazamiento:true,
+      et:{ dias:5, desplaz:0, art:'ET 37.3.b', quien:'Cónyuge, pareja de hecho, parientes hasta 2.º grado (consanguinidad o afinidad) y convivientes que necesiten cuidado' },
+      conv:{ dias:3, desplaz:3, art:'Convenio 14.1.b', quien:'Cónyuge, hijos, padres y suegros, nietos, abuelos y hermanos' },
+      nota:'El ET no aclara si son naturales o laborables; el convenio fija el inicio en el primer día laborable. No tiene que empezar el mismo día del hecho causante y puede disfrutarse mientras persista (STS 126/2026, de 4 de febrero).' },
+    { id:'fallecimiento', nombre:'Fallecimiento de un familiar', unidad:'días', desplazamiento:true,
+      et:{ dias:2, desplaz:2, art:'ET 37.3.b bis', quien:'Cónyuge, pareja de hecho y parientes hasta 2.º grado' },
+      conv:{ dias:3, desplaz:3, art:'Convenio 14.1.b', quien:'Cónyuge, hijos, padres y suegros, nietos, abuelos y hermanos' },
+      nota:'Con desplazamiento, los días extra son el tiempo necesario para el viaje, con un máximo de 3 (convenio).' },
+    { id:'traslado', nombre:'Traslado del domicilio habitual', unidad:'días',
+      et:{ dias:1, art:'ET 37.3.c' }, conv:{ dias:2, art:'Convenio 14.1.c' } },
+    { id:'bodaFamiliar', nombre:'Boda de padres, hijos o hermanos', unidad:'día', lejos:true,
+      conv:{ dias:1, lejos:1, art:'Convenio 14.1.f' },
+      nota:'El día de la celebración. Se amplía un día más si es a más de 100 km y el viaje lo requiere. El ET no lo regula.' },
+    { id:'consulta', nombre:'Acompañar a consulta médica a hijos o familiares de 1.er grado', unidad:'horas',
+      conv:{ dias:6, art:'Convenio 14.1.g', texto:'Hasta 2 horas por ocasión y 3 ocasiones al año (6 horas). Pueden unificarse en una sola vez.' },
+      nota:'Fuera de esas 6 horas, el permiso no es retribuido. Si ambos cónyuges trabajan en la empresa, solo uno de ellos lo tiene retribuido.' },
+    { id:'fuerzaMayor', nombre:'Fuerza mayor familiar (urgencia por enfermedad o accidente)', unidad:'días al año',
+      et:{ dias:4, art:'ET 37.9', texto:'Las horas equivalentes a 4 días al año, retribuidas.' },
+      nota:'Para motivos urgentes e imprevisibles que exijan la presencia inmediata. Debe acreditarse el motivo si se pide.' },
+    { id:'catastrofe', nombre:'Imposibilidad de acceder al trabajo por catástrofe o riesgo grave', unidad:'días',
+      et:{ dias:4, art:'ET 37.3.g', texto:'Hasta 4 días; después, mientras duren las circunstancias (con posible ERTE de fuerza mayor).' } },
+    { id:'deber', nombre:'Deber inexcusable de carácter público y personal (incluido votar)', unidad:'tiempo',
+      et:{ texto:'El tiempo indispensable.', art:'ET 37.3.d' }, conv:{ texto:'El tiempo indispensable.', art:'Convenio 14.1.d' },
+      nota:'Si impide trabajar más del 20 % de las horas en 3 meses, la empresa puede pasar a la persona a excedencia forzosa. Lo que se cobre por ese deber se descuenta del salario.' },
+    { id:'examenes', nombre:'Exámenes', unidad:'tiempo',
+      conv:{ texto:'El tiempo necesario para concurrir.', art:'Convenio 14.1.e' }, et:{ texto:'Permiso para exámenes (ET 23.1.a).', art:'ET 23.1.a' } },
+    { id:'prenatal', nombre:'Exámenes prenatales, preparación al parto y trámites de adopción o acogimiento', unidad:'tiempo',
+      et:{ texto:'El tiempo indispensable, si deben hacerse en horario de trabajo.', art:'ET 37.3.f' } },
+    { id:'lactancia', nombre:'Cuidado del lactante (hasta los 9 meses)', unidad:'opciones',
+      et:{ texto:'1 hora diaria (divisible en dos fracciones) o media hora de reducción; acumulable según convenio.', art:'ET 37.4' },
+      conv:{ dias:14, texto:'Acumulable en 14 días laborables completos, a continuación del permiso por nacimiento. Avisar con 14 días de antelación.', art:'Convenio 14.6' },
+      nota:'Derecho individual de cada progenitor. Si ambos lo ejercen con la misma duración y régimen, puede ampliarse hasta los 12 meses, con reducción proporcional del salario desde los 9 meses. Parto múltiple: se incrementa en proporción.' },
+    { id:'prematuro', nombre:'Nacimiento prematuro u hospitalización tras el parto', unidad:'horas', resumen:'1 h al día',
+      et:{ texto:'1 hora diaria de ausencia retribuida y reducción de hasta 2 horas con reducción proporcional del salario.', art:'ET 37.5' } },
+    { id:'asuntos', nombre:'Asuntos propios que no admiten demora', unidad:'sin retribución', resumen:'No retribuido',
+      conv:{ texto:'Licencia sin retribución. Petición por escrito; la empresa resuelve en un máximo de 2 días.', art:'Convenio 14.3' } },
+    { id:'parental', nombre:'Permiso parental (hasta que el menor cumpla 8 años)', unidad:'semanas',
+      et:{ dias:8, texto:'Hasta 8 semanas por hijo, continuas o discontinuas, a jornada completa o parcial. Preaviso de 10 días.', art:'ET 48 bis' },
+      nota:'No retribuido por la empresa. Es distinto de las 2 semanas del permiso por nacimiento hasta los 8 años.' }
+  ],
+
+  /* REDUCCIÓN DE JORNADA por guarda legal (ET 37.6, en la redacción con efectos del 23/10/2026; convenio 14.1.h). */
+  reduccionJornada: { min: 1/8, max: 1/2, edadMenor: 12, fuente: 'ET 37.6 (efectos 23/10/2026: RDL 31/2026 y Ley 4/2026) · Convenio 14.1.h' },
+
+  /* NACIMIENTO Y CUIDADO DEL MENOR (ET 48.4, 48.6 y 48 bis; RDL 9/2025, en vigor desde el 31/07/2025). */
+  nacimiento: {
+    biparental:  { total: 19, obligatorias: 6, hasta12meses: 11, hasta8anios: 2 },
+    monoparental:{ total: 32, obligatorias: 6, hasta12meses: 22, hasta8anios: 4 },
+    ampliacionDiscapacidad: 1,       // semanas por progenitor (2 en total, una para cada uno)
+    ampliacionPorHijoAdicional: 1,   // semanas por progenitor por cada hijo a partir del segundo
+    hospitalizacionMinDias: 7, hospitalizacionMaxSemanas: 13,
+    anticipoMadreMaxSemanas: 4,
+    lactanciaMeses: 9, lactanciaAcumuladaDias: 14, parentalSemanas: 8, parentalHastaAnios: 8, guardaLegalHastaAnios: 12,
+    fuente: 'ET arts. 48.4, 48.6 y 48 bis · RDL 9/2025 (BOE 30/07/2025) · Convenio 14.5 y 14.6',
+    verificado: '2026-10-21'
+  },
 
   /*
    * FESTIVOS. Cada año: nacionales comunes + capas (comunidad + municipio).

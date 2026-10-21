@@ -22,8 +22,8 @@ const Fecha = {
 };
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const dec = n => Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const euros = n => Number(n).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+const dec = n => Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' });
+const euros = n => Number(n).toLocaleString('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' });
 const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /* Número que cuenta hasta su nuevo valor (decorativo; respeta "reducir movimiento"). */

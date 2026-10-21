@@ -21,6 +21,31 @@ const Ficus = (() => {
       'Si eliges un alta en curso, relleno los datos por ti y puedo marcar el paso en su checklist.',
       'Aquí nada se guarda: cierras la pantalla y los datos se van. Discreción de planta de interior.'
     ],
+    salarios: [
+      'Mueve la barra de jornada y verás el salario a tiempo parcial al momento.',
+      'Algunos puestos tienen categorías alternativas: depende de las funciones reales, no del nombre del puesto.',
+      'La prima de asistencia va aparte: se cobra por día efectivamente trabajado.'
+    ],
+    permisos: [
+      'Aquí siempre gana lo más favorable: si el convenio da más que el Estatuto, se aplica el convenio. Y al revés.',
+      'Marca “Necesita desplazamiento” y verás cómo cambia el cálculo.',
+      'Desde 2023, el permiso por hospitalización de un familiar son 5 días. Yo me tomaría 5 para regarme.'
+    ],
+    nacimiento: [
+      'Son 19 semanas por progenitor desde agosto de 2025. Las 2 últimas, hasta que el menor cumpla 8 años.',
+      'La lactancia acumulada son 14 días laborables por convenio, a continuación del permiso.',
+      'El permiso parental de 8 semanas es otra cosa: no retribuido y hasta los 8 años.'
+    ],
+    indemnizacion: [
+      'La fracción de mes cuenta como mes completo. Sí, aunque sea un día.',
+      'Pulsa una fila de la comparativa para cambiar de tipo de extinción.',
+      'Si hay antigüedad anterior a febrero de 2012, verás dos tramos: 45 y 33 días.'
+    ],
+    finiquito: [
+      'Elige un empleado y relleno fechas, salario y vacaciones disfrutadas.',
+      'En la baja voluntaria compruebo el preaviso según su categoría.',
+      'Recuerda: copia de la liquidación 2 días antes de la baja (convenio art. 29).'
+    ],
     vacaciones: [
       'La IT cuenta como tiempo trabajado: aunque estés de baja, las vacaciones se siguen generando.',
       'Aquí se redondea siempre al alza: 17,66 días son 18. Generosidad vegetal.',
