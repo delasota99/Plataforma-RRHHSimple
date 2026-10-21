@@ -15,6 +15,12 @@ const Ficus = (() => {
       'Llevo años en esta oficina. He visto pasar tres convenios y ningún riego en agosto.',
       'Curiosidad: el registro de jornada es obligatorio desde el primer día. Yo registro el mío: 24 horas haciendo la fotosíntesis.'
     ],
+    documentos: [
+      'Lo que aparece en <mark>amarillo</mark> son datos que faltan. Rellénalos antes de enviar, que luego no hay quien lo arregle.',
+      '<b>Copiar con formato</b> mantiene los párrafos y las listas al pegar en Outlook o Word.',
+      'Si eliges un alta en curso, relleno los datos por ti y puedo marcar el paso en su checklist.',
+      'Aquí nada se guarda: cierras la pantalla y los datos se van. Discreción de planta de interior.'
+    ],
     vacaciones: [
       'La IT cuenta como tiempo trabajado: aunque estés de baja, las vacaciones se siguen generando.',
       'Aquí se redondea siempre al alza: 17,66 días son 18. Generosidad vegetal.',

@@ -709,3 +709,33 @@ main{min-width:0}
 .altas-w .alta-list{margin-top:0}
 .nav a .soon.lock svg{width:13px;height:13px;opacity:.7}
 @media (max-width:760px){.altas-w{grid-template-columns:1fr;gap:12px}}
+
+/* ---------- Fase 4: documentos ---------- */
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.plantillas{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:20px}
+.plant-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--text);text-align:left;font-family:var(--font-d);animation:enter 320ms var(--ease-out) both;animation-delay:calc(var(--i) * 30ms);transition:transform 160ms var(--ease-out),border-color 160ms ease,background-color 160ms ease}
+.plant-card b{font-size:14px;font-weight:600;line-height:1.25}
+.plant-card small{font-size:12px;color:var(--muted)}
+.plant-card .pc-ico{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--brand);margin-bottom:4px;transition:background-color 160ms ease,color 160ms ease}
+.plant-card .pc-ico svg{width:18px;height:18px}
+.plant-card.on{border-color:var(--brand);box-shadow:var(--shadow)}
+.plant-card.on .pc-ico{background:var(--brand);color:var(--on-brand)}
+.plant-card:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.plant-card:not(.on):hover{border-color:var(--border-strong)}}
+.doc-layout{grid-template-columns:minmax(300px,400px) 1fr}
+.doc-layout .form{display:flex;flex-direction:column;gap:14px}
+.comercial{border-radius:14px;padding:12px;background:var(--surface-2)}
+.com-campos{display:flex;flex-direction:column;gap:12px;margin-top:12px;animation:enter 260ms var(--ease-out) both}
+.doc-prev{display:flex;flex-direction:column;gap:14px}
+.mail-row{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.mail-k{font-family:var(--font-d);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);flex:none}
+.mail-v{flex:1;font-weight:600;min-width:0}
+.mail-body{white-space:pre-wrap;line-height:1.6;font-size:15px;overflow-wrap:anywhere;max-height:62vh;overflow-y:auto;padding-right:4px}
+.doc-prev.documento .mail-body{padding:22px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.doc-prev mark{background:var(--accent);color:var(--on-accent);border-radius:4px;padding:0 3px}
+.adjuntos{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13.5px}
+.adjuntos .tag{padding:3px 9px;border-radius:999px;background:var(--surface-2);font-size:12.5px}
+.doc-acts{display:flex;flex-wrap:wrap;gap:8px}
+.doc-acts .btn svg{width:16px;height:16px}
+.doc-link:empty{display:none}
+@media (max-width:760px){.doc-layout{grid-template-columns:1fr}.row3{grid-template-columns:1fr 1fr 1fr}.plantillas{grid-template-columns:1fr 1fr}}

@@ -3,7 +3,7 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.3.1 · fase 3';
+  const VERSION = '0.4.0 · fase 4';
   const NAV = [
     ['', [['inicio', 'Inicio']]],
     ['Personas', [['empleados', 'Empleados'], ['altas', 'Altas']]],
@@ -12,8 +12,8 @@ const Shell = (() => {
     ['', [['ajustes', 'Ajustes']]]
   ];
   const ETIQ = Object.fromEntries(NAV.flatMap(g => g[1]));
-  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, ajustes: ModAjustes };
-  const FASE = { documentos: 4, salarios: 5, permisos: 5, nacimiento: 5, indemnizacion: 5, finiquito: 5 };
+  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, documentos: ModDocumentos, ajustes: ModAjustes };
+  const FASE = { salarios: 5, permisos: 5, nacimiento: 5, indemnizacion: 5, finiquito: 5 };
   const main = $('#main');
   const ruta = () => { const r = location.hash.slice(1); return r in ETIQ ? r : 'inicio'; };
 

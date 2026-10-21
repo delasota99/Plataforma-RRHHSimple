@@ -91,6 +91,24 @@ window.RRHH_PARAMS = {
   /* Centros de trabajo de la empresa. Los de fábrica añaden pasos específicos en las altas. */
   centros: ['Fábrica (Talavera)', 'Oficina (Madrid)'],
 
+  /* Datos para las plantillas de documentos. */
+  empresa: {
+    nombre: 'Liptosa',
+    nombreMayusculas: 'LIPTOSA',
+    firmante: 'Fernando',
+    cargo: 'Responsable de Recursos Humanos',
+    firmaCorta: 'Fernando — RRHH',
+    centrosTexto: { 'Fábrica (Talavera)': 'Talavera de la Reina', 'Oficina (Madrid)': 'Madrid' },
+    enlaceModelo145: 'https://www.mugeju.es/sites/default/files/archivos/impresos/prestaciones/Modelo_145_rellenable.pdf',
+    validezOfertaDias: 7
+  },
+  planIgualdad: {
+    aprobado: '2024-12-17',
+    vigenteHasta: '2028-12-16',
+    firmantes: 'CCOO y UGT-FICA',
+    registro: 'Ministerio de Trabajo y Economía Social'
+  },
+
   /* Departamentos de la empresa (desplegable en empleados y altas). */
   departamentos: ['Fábrica', 'Comercial', 'Administración y Finanzas', 'Homologación y Registros'],
 

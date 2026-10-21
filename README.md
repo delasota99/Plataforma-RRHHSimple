@@ -51,5 +51,5 @@ Convenio colectivo estatal de industrias de alimentos compuestos para animales (
 | 1. Base | Estructura, panel con bloques, tema, buscador, tareas básicas, copias, parámetros, Ficus, vacaciones | ✅ |
 | 2. Organización | Tareas con estados (pendiente, en proceso, terminado), fecha opcional, tablero tipo Trello, avisos y exportación a Outlook/Google; calendario de festivos (Madrid, Talavera, Valencia y empresa) | ✅ |
 | 3. Personas | Empleados cifrados con contraseña (importar CSV, filtros, fichas) y seguimiento de altas (checklist por centro, tareas automáticas, cierre → ficha) | ✅ |
-| 4. Documentos | Generador con las 6 plantillas | Pendiente |
+| 4. Documentos | Generador con las 6 plantillas (correo y carta de oferta, documentación, bienvenida, emergencias, aviso a PRL y Calidad) | ✅ Hecha |
 | 5. Calculadoras | Salarios, permisos, nacimiento, indemnización, finiquito | Pendiente |
