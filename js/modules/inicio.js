@@ -38,7 +38,7 @@ const ModInicio = (() => {
   }
   function filaTarea(t) {
     const d = t.fecha ? Fecha.parse(t.fecha) : null, hoy = Fecha.hoy();
-    return `<li class="task est-${t.estado}${t.hecha ? ' done' : ''}" data-id="${t.id}">
+    return `<li class="task p-${t.prioridad} est-${t.estado}${t.hecha ? ' done' : ''}" data-id="${t.id}">
       <button class="st st-${t.estado} st-min" data-st aria-label="Estado: ${Tareas.ESTADO[t.estado]}. Pulsa para cambiarlo" title="${Tareas.ESTADO[t.estado]} · pulsa para avanzar"><i></i><span>${Tareas.ESTADO[t.estado]}</span></button>
       <i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i>
       <button class="tt tt-btn" data-edit>${esc(t.titulo)}<small>${d === null ? 'Sin fecha' : d === hoy ? 'Hoy' : Fecha.corta(d)}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}</small></button></li>`;

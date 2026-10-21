@@ -38,10 +38,11 @@ window.RRHH_PARAMS = {
   },
 
   preavisoBajaVoluntaria: {          // art. 29 convenio
-    unMes: ['Técnico', 'Auxiliar de laboratorio', 'Informática', 'Administrativo', 'Comercial', 'Encargado/a de producción'],
+    unMes: ['Técnico', 'Auxiliar de laboratorio', 'Informática', 'Administrativo', 'Comercial', 'Encargado/a de producción', 'Jefe/a de Fábrica (criterio de empresa)'],
     ochoDias: ['Producción (excepto encargados)', 'Mantenimiento y transporte', 'Subalterno'],
-    // Por categoría (tablas): un mes para grupos A, B, C, D, E y el encargado de producción (F2); ocho días para el resto.
-    unMesCategorias: ['A', 'B', 'C', 'D', 'E', 'F2'],
+    // Por categoría (tablas): un mes para grupos A, B, C, D, E, el encargado de producción (F2) y el jefe de fábrica (F1,
+    // criterio de empresa confirmado por Fernando el 21/10/2026); ocho días para el resto.
+    unMesCategorias: ['A', 'B', 'C', 'D', 'E', 'F1', 'F2'],
     sancion: 'Un día de salario por cada día de retraso en el aviso',
     fuente: 'Convenio, art. 29'
   },

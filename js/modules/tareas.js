@@ -31,7 +31,7 @@ const ModTareas = (() => {
 
   /* ---------- Lista ---------- */
   function fila(t) {
-    return `<li class="task task-full est-${t.estado}${t.hecha ? ' done' : ''}${recien === t.id ? ' just' : ''}" data-id="${t.id}">
+    return `<li class="task task-full p-${t.prioridad} est-${t.estado}${t.hecha ? ' done' : ''}${recien === t.id ? ' just' : ''}" data-id="${t.id}">
       ${botonEstado(t)}
       <i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i>
       <button class="tt tt-btn" data-edit>${esc(t.titulo)}${t.nota ? `<span class="nota">${esc(t.nota)}</span>` : ''}
@@ -66,7 +66,7 @@ const ModTareas = (() => {
 
   /* ---------- Tablero ---------- */
   function tarjeta(t) {
-    return `<div class="kcard${recien === t.id ? ' just' : ''}" draggable="true" tabindex="0" data-id="${t.id}" aria-label="${esc(t.titulo)}. Importancia ${t.prioridad}. ${tactil ? 'Pulsa para cambiar de estado.' : 'Arrastra para cambiar de estado, doble clic para editar.'}">
+    return `<div class="kcard p-${t.prioridad}${recien === t.id ? ' just' : ''}" draggable="true" tabindex="0" data-id="${t.id}" aria-label="${esc(t.titulo)}. Importancia ${t.prioridad}. ${tactil ? 'Pulsa para cambiar de estado.' : 'Arrastra para cambiar de estado, doble clic para editar.'}">
       <span class="kt">${esc(t.titulo)}</span>
       <span class="kf"><i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i>${vencida(t) ? `<span class="late-txt">${Fecha.corta(Fecha.parse(t.fecha))}</span>` : ''}${t.repite ? `<span class="krep" title="${Tareas.REPITE[t.repite]}">${ICO.repite}</span>` : ''}</span>
     </div>`;
@@ -152,7 +152,7 @@ const ModTareas = (() => {
         const id = Number(li.dataset.id), t = buscar(id); if (!t) return;
         if (e.target.closest('[data-st]')) cambiar(main, id);
         else if (e.target.closest('[data-alta]')) { ModAltas.abrir(t.altaId); location.hash = '#altas'; }
-        else if (e.target.closest('[data-del]')) Tareas.borrarConDeshacer(id);
+        else if (e.target.closest('[data-del]')) { li.classList.add('saliendo'); setTimeout(() => Tareas.borrarConDeshacer(id), reduceMotion ? 0 : 200); }
         else if (e.target.closest('[data-ics]')) Tareas.descargarIcs([t], 'tarea-' + norm(t.titulo).replace(/[^a-z0-9]+/g, '-').slice(0, 40));
         else if (e.target.closest('[data-edit]')) Tareas.abrir({ tarea: t });
       };

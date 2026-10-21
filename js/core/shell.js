@@ -3,7 +3,7 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.5.0 · fase 5';
+  const VERSION = '0.5.1 · fase 5';
   const NAV = [
     ['', [['inicio', 'Inicio']]],
     ['Personas', [['empleados', 'Empleados'], ['altas', 'Altas']]],
@@ -32,8 +32,11 @@ const Shell = (() => {
     if (!a) { pill.style.opacity = 0; return; }
     pill.style.opacity = 1; pill.style.height = a.offsetHeight + 'px'; pill.style.transform = `translateY(${a.offsetTop}px)`;
   }
+  /* La animación de entrada solo se ve al cambiar de pantalla, nunca al repintar la misma (sin "reinicio"). */
+  let animT;
+  function animarEntrada() { main.setAttribute('data-anim', ''); clearTimeout(animT); animT = setTimeout(() => main.removeAttribute('data-anim'), 700); }
   function render() {
-    const r = ruta(); marcar();
+    const r = ruta(); marcar(); animarEntrada();
     if (MODULOS[r]) MODULOS[r].render(main);
     else main.innerHTML = `<div class="view empty"><div><div class="ico">${icon(r)}</div><h1 style="font-size:30px;font-weight:600">${esc(ETIQ[r])}</h1>
       <p>Ya está definida y llega en la <b>fase ${FASE[r]}</b>.</p>

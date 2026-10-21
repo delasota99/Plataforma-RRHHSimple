@@ -108,6 +108,7 @@ ok('Preaviso de 8 días cumplido: sin descuento', pv8.preaviso.retraso === 0 && 
 ok('Vacaciones disfrutadas de más: descuento', F.calcular({ inicio: '2020-01-01', fin: '2026-10-15', salarioAnual: 32000, vacacionesPendientes: -2 }, cfgF).lineas.find(l => l.id === 'vacaciones').importe < 0);
 ok('Preaviso por categoría: especialista 8 días, encargado y administrativo un mes, encargado de mantenimiento 8 días',
   F.preavisoDe('F6', P.preavisoBajaVoluntaria).tipo === 'dias' && F.preavisoDe('F2', P.preavisoBajaVoluntaria).tipo === 'mes' && F.preavisoDe('D2', P.preavisoBajaVoluntaria).tipo === 'mes' && F.preavisoDe('G1', P.preavisoBajaVoluntaria).tipo === 'dias');
+ok('Jefe de Fábrica: un mes (criterio de empresa)', F.preavisoDe('F1', P.preavisoBajaVoluntaria).tipo === 'mes');
 ok('Indemnización sumada al total', F.calcular({ inicio: '2024-03-15', fin: '2026-10-15', salarioAnual: 32000, vacacionesPendientes: 5, indemnizacion: 1000 }, cfgF).total === 4097.76);
 
 console.log(fallos ? `\n${fallos} de ${total} pruebas fallidas` : `\nTodas las pruebas correctas (${total})`);

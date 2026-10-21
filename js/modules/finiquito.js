@@ -33,7 +33,7 @@ const ModFiniquito = (() => {
             <p><b>Salario del mes:</b> paga ÷ 30 × días trabajados (si la baja es el último día del mes, 30 días). Se suma la prorrata del mes de las ${P.pagasExtra.prorrateadas} pagas prorrateadas.</p>
             <p><b>Paga de junio</b> (se genera de enero a junio) o <b>de diciembre</b> (de julio a diciembre): parte proporcional por meses; la fracción de mes cuenta como mes completo (convenio art. 24).</p>
             <p><b>Vacaciones (convenio art. 12 · ET 38):</b> días laborables pendientes × 30/22 = días naturales × salario diario. Los generados se redondean al alza.</p>
-            <p><b>Preaviso en la baja voluntaria (convenio art. 29):</b> un mes para personal técnico, auxiliar de laboratorio, informática, administración, comercial y encargados de producción; ocho días para el resto. Se descuenta un día de salario por cada día de retraso.</p>
+            <p><b>Preaviso en la baja voluntaria (convenio art. 29):</b> un mes para personal técnico, auxiliar de laboratorio, informática, administración, comercial y encargados de producción (y jefe de fábrica, por criterio de empresa); ocho días para el resto. Se descuenta un día de salario por cada día de retraso.</p>
             <p style="margin:0">La empresa debe entregar una copia de la liquidación 2 días antes de la baja (convenio art. 29.2). Importes brutos: no incluye IRPF ni cotizaciones.</p>`)}
         </div>
       </div>
