@@ -118,6 +118,28 @@ window.RRHH_PARAMS = {
   tiposPromocion: ['Promoción de categoría', 'Cambio de puesto', 'Cambio de departamento', 'Subida salarial', 'Cambio de contrato'],
   tiposContrato: ['Indefinido a jornada completa', 'Indefinido a tiempo parcial', 'Fijo discontinuo', 'Temporal por circunstancias de la producción', 'Temporal de sustitución', 'Formativo'],
 
+  /* NÓMINAS: variables del mes para comunicar a la gestoría. auto = sale de lo registrado; manual = lo añade Fernando. */
+  nomina: {
+    categorias: [
+      { id: 'altas', titulo: 'Incorporaciones', auto: true },
+      { id: 'bajas', titulo: 'Bajas de la empresa', auto: true },
+      { id: 'guardias', titulo: 'Guardias Fábrica', manual: true },
+      { id: 'nacimiento', titulo: 'Maternidad/Paternidad', auto: true },
+      { id: 'parental', titulo: 'Permiso parental (no retribuido)', auto: true },
+      { id: 'it', titulo: 'Bajas laborales', auto: true },
+      { id: 'excedencia', titulo: 'Excedencias', auto: true },
+      { id: 'reduccion', titulo: 'Reducciones de jornada', auto: true },
+      { id: 'noRetribuido', titulo: 'Permiso día sin sueldo', auto: true },
+      { id: 'cambios', titulo: 'Cambios de salario, categoría o contrato', auto: true },
+      { id: 'horasExtra', titulo: 'Horas extra', manual: true },
+      { id: 'diferencia', titulo: 'Diferencia de nómina', manual: true },
+      { id: 'anticipo', titulo: 'Anticipos', manual: true },
+      { id: 'otros', titulo: 'Otros', manual: true }
+    ],
+    saludo: 'Buenos días,',
+    intro: 'A continuación, os dejo las variables de nómina para el mes de {mes}, cualquier duda me decís:'
+  },
+
   /* PROCESOS (fase 8) */
   procesos: {
     canales: ['LinkedIn', 'InfoJobs', 'Indeed', 'Agencia de reclutamiento', 'ETT', 'Web de la empresa', 'Recomendación de empleado', 'Servicio público de empleo', 'Universidad o centro de formación', 'Otro'],

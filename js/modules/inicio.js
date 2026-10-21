@@ -120,12 +120,12 @@ const ModInicio = (() => {
     for (let i = 0; i < off; i++) celdas += '<span class="mc-v"></span>';
     for (let d = 1; d <= n; d++) {
       const f = `${v.anio}-${String(v.mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, fs = D.fest.get(f) || [], ts = (D.tareas.get(f) || []).filter(t => !t.hecha), as = D.aus.get(f) || [], dow = (off + d - 1) % 7;
-      const tit = [...fs.map(x => x.nombre), ts.length ? `${ts.length} tarea${ts.length > 1 ? 's' : ''}` : '', as.length ? `${as.length} ausencia${as.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
+      const tit = [...fs.map(x => x.nombre), ts.length ? `${ts.length} tarea${ts.length > 1 ? 's' : ''}` : '', as.length ? `Termina${as.length > 1 ? 'n' : ''} ${as.length} ausencia${as.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
       celdas += `<button class="mc-d${dow > 4 ? ' finde' : ''}${fs.length ? ' fest tag-' + fs[0].capa : ''}${f === h ? ' hoy' : ''}" data-ir="${f}" title="${esc(tit)}" aria-label="${d}${tit ? ': ' + esc(tit) : ''}"><span>${d}</span><em>${ts.length ? '<i class="t"></i>' : ''}${as.length ? '<i class="a"></i>' : ''}</em></button>`;
     }
     return `<div class="card mc"><div class="card-h"><h3>${MESES[v.mes]} ${v.anio}</h3><span class="mc-nav"><button class="icon-act" data-mc="-1" aria-label="Mes anterior"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><button class="icon-act" data-mc="0" aria-label="Mes actual" title="Hoy"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></button><button class="icon-act" data-mc="1" aria-label="Mes siguiente"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></span></div>
       <div class="mc-g">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((x, i) => `<span class="mc-h${i > 4 ? ' finde' : ''}">${x}</span>`).join('')}${celdas}</div>
-      <div class="mc-ley"><span><i class="f"></i>Festivo</span><span><i class="t"></i>Tareas</span><span><i class="a"></i>Ausencias</span><a href="#calendario">Abrir calendario</a></div></div>`;
+      <div class="mc-ley"><span><i class="f"></i>Festivo</span><span><i class="t"></i>Tareas</span><span><i class="a"></i>Fin de ausencia</span><a href="#calendario">Abrir calendario</a></div></div>`;
   }
 
   function bAusencias() {

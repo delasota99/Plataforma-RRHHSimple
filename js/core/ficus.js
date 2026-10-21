@@ -35,6 +35,11 @@ const Ficus = (() => {
       'Una subida de salario también es un dato de igualdad: regístrala aquí y actualizo la ficha.',
       'El informe de Promociones calcula la subida media de mujeres y de hombres.'
     ],
+    nominas: [
+      'Las bajas, permisos y altas del mes aparecen solas. Tú solo añades guardias, horas extra o diferencias.',
+      '“Copiar con formato” y lo pegas en Outlook con negritas y listas, como siempre.',
+      'Cuando lo envíes, márcalo como comunicado y así sabrás qué meses están cerrados.'
+    ],
     salidas: [
       'La copia de la liquidación, 2 días antes de la baja. Lo dice el convenio (art. 29.2).',
       'Desde agosto de 2026 hay 6 días naturales para dar la baja en la Seguridad Social.',
