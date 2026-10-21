@@ -112,6 +112,11 @@ window.RRHH_PARAMS = {
     registro: 'Ministerio de Trabajo y Economía Social'
   },
 
+  /* Datos para los informes de igualdad (fase 7). */
+  motivosBaja: ['Baja voluntaria', 'Fin de contrato temporal', 'No superación del periodo de prueba', 'Despido disciplinario', 'Despido objetivo', 'Despido colectivo (ERE)',
+    'Mutuo acuerdo', 'Jubilación', 'Incapacidad permanente', 'Fallecimiento', 'Excedencia sin reingreso', 'Otro'],
+  tiposPromocion: ['Promoción de categoría', 'Cambio de puesto', 'Cambio de departamento', 'Mejora salarial'],
+
   /* Departamentos de la empresa (desplegable en empleados y altas). */
   departamentos: ['Fábrica', 'Comercial', 'Administración y Finanzas', 'Homologación y Registros'],
 

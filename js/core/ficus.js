@@ -21,6 +21,11 @@ const Ficus = (() => {
       'Si eliges un alta en curso, relleno los datos por ti y puedo marcar el paso en su checklist.',
       'Aquí nada se guarda: cierras la pantalla y los datos se van. Discreción de planta de interior.'
     ],
+    informes: [
+      'Todos los informes separan mujeres y hombres. Si ves “Sin indicar”, completa el sexo en la ficha.',
+      'Para el PDF, pulsa “Imprimir / PDF” y elige “Guardar como PDF”.',
+      'El Excel trae dos hojas: el resumen con porcentajes y el detalle nominal.'
+    ],
     ausencias: [
       'Aquí nunca va el diagnóstico: solo el tipo y las fechas. Lo que no se guarda no se puede filtrar.',
       'Pon el último día previsto y te creo una tarea 5 días antes de la vuelta.',

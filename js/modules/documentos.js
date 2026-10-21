@@ -111,7 +111,7 @@ const ModDocumentos = (() => {
     $('#desdeAlta', main) && ($('#desdeAlta', main).onchange = e => {
       const a = Altas.todas().find(x => x.id === Number(e.target.value));
       altaId = a ? a.id : null;
-      if (a) { const n = MotorEmpleados.partirNombre(a.nombre); Object.assign(d, { nombre: n.nombre, apellidos: [n.apellido1, n.apellido2].filter(Boolean).join(' '), centro: a.centro, puesto: a.puesto, departamento: a.departamento, salario: a.salario, fechaIncorporacion: a.fechaIncorporacion, comercial: a.departamento === 'Comercial' }); }
+      if (a) { const n = MotorEmpleados.partirNombre(a.nombre); Object.assign(d, { nombre: n.nombre, apellidos: [n.apellido1, n.apellido2].filter(Boolean).join(' '), centro: a.centro, puesto: a.puesto, departamento: a.departamento, salario: a.salario, fechaIncorporacion: a.fechaIncorporacion, comercial: a.departamento === 'Comercial', ...(a.sexo ? { tratamiento: a.sexo === 'mujer' ? 'a' : 'o' } : {}) }); }
       render(main);
     });
     enlazarVista();
@@ -137,7 +137,7 @@ const ModDocumentos = (() => {
       toast('Paso marcado en el alta'); Ficus.decir('Un paso menos en el alta. Así da gusto.', 'yay'); repintarVista();
     };
     const c = $('#crearAlta');
-    if (c) c.onclick = () => ModAltas.nueva(null, { nombre: [d.nombre, d.apellidos].filter(x => String(x).trim()).join(' '), centro: d.centro, puesto: d.puesto, departamento: d.departamento, salario: d.salario, ofertaEnviada: true });
+    if (c) c.onclick = () => ModAltas.nueva(null, { nombre: [d.nombre, d.apellidos].filter(x => String(x).trim()).join(' '), centro: d.centro, puesto: d.puesto, departamento: d.departamento, salario: d.salario, sexo: d.tratamiento === 'a' ? 'mujer' : 'hombre', ofertaEnviada: true });
   }
 
   return { render };

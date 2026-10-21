@@ -4,7 +4,7 @@
  */
 const ModEmpleados = (() => {
   const P = window.RRHH_PARAMS;
-  let f = { q: '', centro: '', departamento: '', responsable: '', estado: 'activos' }, pendienteAbrir = null;
+  let f = { q: '', centro: '', departamento: '', responsable: '', sexo: '', estado: 'activos' }, pendienteAbrir = null;
   const hoy = () => Fecha.iso(Fecha.hoy());
   const antig = fc => { if (!fc) return ''; const d = Fecha.parse(fc), a = (Fecha.hoy() - d) / (365.25 * DAY); return a < 1 ? `${Math.max(0, Math.floor(a * 12))} meses` : `${Math.floor(a)} año${Math.floor(a) === 1 ? '' : 's'}`; };
   const ini = n => (n || '?').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -79,10 +79,12 @@ const ModEmpleados = (() => {
         <div class="kpi"><b>${act.length}</b><span>activos</span></div>
         ${P.centros.map(c => `<div class="kpi"><b>${act.filter(e => e.centro === c).length}</b><span>${esc(c)}</span></div>`).join('')}
         <div class="kpi"><b>${todos.length - act.length}</b><span>bajas</span></div>
+        <div class="kpi"><b>${act.filter(e => e.sexo === 'mujer').length} · ${act.filter(e => e.sexo === 'hombre').length}</b><span>mujeres · hombres</span></div>
       </div>
+      ${todos.some(e => !e.sexo) ? `<div class="note warn" style="margin-bottom:16px">${icon('info')}<div><b>${todos.filter(e => !e.sexo).length} fichas sin sexo.</b> Los informes de igualdad lo necesitan. <button class="linkbtn" id="verSinSexo">Ver cuáles</button></div></div>` : ''}
       <div class="toolbar">
         <div class="seg3" role="group" aria-label="Situación">${[['activos', 'Activos'], ['bajas', 'Bajas'], ['todos', 'Todos']].map(([k, l]) => `<button data-est="${k}" aria-pressed="${f.estado === k}">${l}</button>`).join('')}</div>
-        ${sel('fCentro', 'centro', 'Centro')}${sel('fDep', 'departamento', 'Departamento')}${sel('fResp', 'responsable', 'Responsable')}
+        ${sel('fCentro', 'centro', 'Centro')}${sel('fDep', 'departamento', 'Departamento')}${sel('fResp', 'responsable', 'Responsable')}<label class="sel"><span class="sr">Sexo</span><select id="fSx"><option value="">Sexo: todos</option>${[['mujer', 'Mujeres'], ['hombre', 'Hombres'], ['sin', 'Sin indicar']].map(([k, l]) => `<option value="${k}" ${f.sexo === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="search-in"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">Buscar empleados</span><input id="eq" type="search" placeholder="Nombre, código, puesto…" value="${esc(f.q)}"></label>
       </div>
       <div class="card tbl-card"><div class="tbl-wrap"><table class="tbl emp-tbl"><thead><tr><th>Empleado</th><th>Departamento</th><th>Responsable</th><th>Centro</th><th>Puesto</th><th>Contratación</th><th class="num">Salario anual</th></tr></thead>
@@ -95,6 +97,8 @@ const ModEmpleados = (() => {
     $$('[data-est]', main).forEach(b => b.onclick = () => { f.estado = b.dataset.est; render(main); });
     [['fCentro', 'centro'], ['fDep', 'departamento'], ['fResp', 'responsable']].forEach(([id, k]) => $('#' + id).onchange = e => { f[k] = e.target.value; repintar(); });
     $('#eq').oninput = e => { f.q = e.target.value; repintar(); };
+    $('#fSx').onchange = e => { f.sexo = e.target.value; repintar(); };
+    $('#verSinSexo') && ($('#verSinSexo').onclick = () => { f.sexo = 'sin'; f.estado = 'todos'; render(main); });
     $('#lock').onclick = () => { Empleados.bloquear(); render(main); toast('Empleados bloqueados'); };
     $('#nuevo').onclick = () => ficha(null, main);
     $('#eBody').onclick = e => { const tr = e.target.closest('tr[data-id]'); if (tr) ficha(Number(tr.dataset.id), main); };
@@ -117,7 +121,7 @@ const ModEmpleados = (() => {
 
   /* ---------- Ficha (crear / editar) ---------- */
   function ficha(id, main, { prefill = null, alGuardar = null } = {}) {
-    const e = id ? Empleados.buscar(id) : { codigo: '', nombre: '', apellido1: '', apellido2: '', departamento: '', responsable: '', centro: P.centros[0], puesto: '', fechaContratacion: '', salario: '', fechaBaja: '', vacaciones: {}, ...(prefill || {}) };
+    const e = id ? Empleados.buscar(id) : { codigo: '', nombre: '', apellido1: '', apellido2: '', sexo: '', motivoBaja: '', departamento: '', responsable: '', centro: P.centros[0], puesto: '', fechaContratacion: '', salario: '', fechaBaja: '', vacaciones: {}, ...(prefill || {}) };
     if (!e) return;
     const y = new Date().getFullYear(), todos = Empleados.todos();
     const dl = (idl, campo) => `<datalist id="${idl}">${MotorEmpleados.valores(todos, campo).map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
@@ -130,6 +134,7 @@ const ModEmpleados = (() => {
           <div class="field"><label for="fNom">Nombre</label><input id="fNom" value="${esc(e.nombre)}" required autocomplete="off"></div></div>
         <div class="row2"><div class="field"><label for="fAp1">Primer apellido</label><input id="fAp1" value="${esc(e.apellido1)}" required autocomplete="off"></div>
           <div class="field"><label for="fAp2">Segundo apellido <span class="muted" style="font-weight:400">(opcional)</span></label><input id="fAp2" value="${esc(e.apellido2)}" autocomplete="off"></div></div>
+        <div class="field"><span class="flabel">Sexo <span class="muted" style="font-weight:400">(para los informes de igualdad)</span></span><div class="seg" id="fSexo" role="radiogroup"><span class="thumb" style="${e.sexo ? (e.sexo === 'hombre' ? 'transform:translateX(100%)' : '') : 'opacity:0'}"></span><button type="button" role="radio" data-sx="mujer" aria-pressed="${e.sexo === 'mujer'}" aria-checked="${e.sexo === 'mujer'}">Mujer</button><button type="button" role="radio" data-sx="hombre" aria-pressed="${e.sexo === 'hombre'}" aria-checked="${e.sexo === 'hombre'}">Hombre</button></div></div>
         <div class="row2"><div class="field"><label for="fDepI">Departamento</label><select id="fDepI"><option value="">Sin indicar</option>${deps.map(x => `<option ${e.departamento === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
           <div class="field"><label for="fRespI">Responsable</label><input id="fRespI" list="dlResp" value="${esc(e.responsable)}">${dl('dlResp', 'responsable')}</div></div>
         <div class="row2"><div class="field"><label for="fCen">Centro</label><select id="fCen">${P.centros.map(c => `<option ${e.centro === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}${e.centro && !P.centros.includes(e.centro) ? `<option selected>${esc(e.centro)}</option>` : ''}</select></div>
@@ -138,22 +143,28 @@ const ModEmpleados = (() => {
           <div class="field"><label for="fSal">Salario bruto anual (€)</label><input id="fSal" inputmode="decimal" value="${e.salario === '' || e.salario == null ? '' : String(e.salario).replace('.', ',')}" placeholder="p. ej. 23.318,24"></div></div>
         <div class="row2"><div class="field"><label for="fFb">Fecha de baja <span class="muted" style="font-weight:400">(si ya no está)</span></label><input type="date" id="fFb" value="${e.fechaBaja || ''}"></div>
           <div class="field"><label for="fVac">Vacaciones disfrutadas en ${y}</label><input type="number" id="fVac" min="0" step="1" value="${e.vacaciones?.[y] ?? ''}" placeholder="0"><div class="hint">Se usan al calcular sus vacaciones.</div></div></div>
+        <div class="field" id="fMotBox" ${e.fechaBaja ? '' : 'hidden'}><label for="fMot">Motivo de la baja</label><select id="fMot"><option value="">— Elige —</option>${[...P.motivosBaja, ...(e.motivoBaja && !P.motivosBaja.includes(e.motivoBaja) ? [e.motivoBaja] : [])].map(m => `<option ${e.motivoBaja === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></div>
         <p class="form-err" id="fErr" role="alert"></p>
       </div>
       <div class="dlg-f">
-        ${id ? `<button type="button" class="btn ghost danger" id="fDel" style="margin-right:auto">Eliminar</button><button type="button" class="btn ghost" id="fAusBtn">Ausencias${(e.ausencias || []).length ? ` (${e.ausencias.length})` : ''}</button><button type="button" class="btn ghost" id="fVacBtn">Calcular vacaciones</button>` : ''}
+        ${id ? `<button type="button" class="btn ghost danger" id="fDel" style="margin-right:auto">Eliminar</button><button type="button" class="btn ghost" id="fProBtn">Promociones${(e.promociones || []).length ? ` (${e.promociones.length})` : ''}</button><button type="button" class="btn ghost" id="fAusBtn">Ausencias${(e.ausencias || []).length ? ` (${e.ausencias.length})` : ''}</button><button type="button" class="btn ghost" id="fVacBtn">Calcular vacaciones</button>` : ''}
         <button type="button" class="btn ghost" id="fCancel">Cancelar</button><button class="btn">${id ? 'Guardar' : 'Crear empleado'}</button>
       </div></form>`, { ancho: 640 });
     $('#fCancel', d).onclick = () => d.close('cancel');
+    let sexo = e.sexo || '';
+    $$('[data-sx]', d).forEach(b => b.onclick = () => { sexo = b.dataset.sx; $$('[data-sx]', d).forEach(x => { x.setAttribute('aria-pressed', x === b); x.setAttribute('aria-checked', x === b); }); const th = $('#fSexo .thumb', d); th.style.opacity = 1; th.style.transform = sexo === 'hombre' ? 'translateX(100%)' : 'none'; });
+    $('#fFb', d).addEventListener('input', () => { $('#fMotBox', d).hidden = !$('#fFb', d).value; });
+    $('#fProBtn', d) && ($('#fProBtn', d).onclick = () => { d.close('cancel'); promociones(id, main); });
     $('#fAusBtn', d) && ($('#fAusBtn', d).onclick = () => { d.close('cancel'); ModAusencias.deEmpleado(id); });
     $('#fForm', d).onsubmit = async ev => {
       ev.preventDefault();
       const sal = MotorEmpleados.importe($('#fSal', d).value);
       const nuevo = { codigo: $('#fCod', d).value.trim(), nombre: $('#fNom', d).value.trim(), apellido1: $('#fAp1', d).value.trim(), apellido2: $('#fAp2', d).value.trim(), departamento: $('#fDepI', d).value, responsable: $('#fRespI', d).value.trim(),
-        centro: $('#fCen', d).value, puesto: $('#fPue', d).value.trim(), fechaContratacion: $('#fFc', d).value, salario: sal === null ? NaN : sal, fechaBaja: $('#fFb', d).value,
+        centro: $('#fCen', d).value, puesto: $('#fPue', d).value.trim(), fechaContratacion: $('#fFc', d).value, salario: sal === null ? NaN : sal, fechaBaja: $('#fFb', d).value, sexo, motivoBaja: $('#fFb', d).value ? $('#fMot', d).value : '',
         vacaciones: { ...(e.vacaciones || {}), ...($('#fVac', d).value !== '' ? { [y]: Math.max(0, Math.floor(Number($('#fVac', d).value))) } : {}) } };
       const err = MotorEmpleados.validar({ ...nuevo, id }, Empleados.todos());
       if (Number.isNaN(nuevo.salario)) err.push('Salario no válido');
+      if (!nuevo.sexo) err.push('Indica el sexo (lo necesitan los informes de igualdad)');
       if (err.length) { $('#fErr', d).textContent = err.join(' · '); return; }
       const guardado = id ? await Empleados.editarEmpleado(id, nuevo) : await Empleados.crearEmpleado(nuevo);
       d.close('ok'); toast(id ? 'Ficha actualizada' : 'Empleado creado');
@@ -167,6 +178,37 @@ const ModEmpleados = (() => {
       $('#fVacBtn', d).onclick = () => { d.close('vac'); ModVacaciones.paraEmpleado(id); };
     }
     $('#fCod', d).focus();
+  }
+
+  /* Promociones y cambios de puesto (para los informes de igualdad). Al guardar, la ficha pasa al puesto nuevo. */
+  function promociones(id, main) {
+    const e = Empleados.buscar(id); if (!e) return;
+    const l = [...(e.promociones || [])].sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const puestos = [...new Set([...P.puestos.map(p => p.puesto), ...MotorEmpleados.valores(Empleados.todos(), 'puesto')])];
+    const d = abrirModal(`<form id="prF" novalidate><div class="dlg-b">
+      <h2 style="font-size:20px;font-weight:600;margin:0 0 4px">Promociones · ${esc(e.nombreCompleto)}</h2><p class="muted" style="margin:0 0 14px">Puesto actual: ${esc(e.puesto || '—')}${e.departamento ? ' · ' + esc(e.departamento) : ''}</p>
+      ${l.length ? `<ul class="pro-list">${l.map(p => `<li><span class="chip-c tag-empresa">${Fecha.larga(Fecha.parse(p.fecha))}</span><span><b>${esc(p.tipo)}</b><small>${esc(p.de || '—')} → ${esc(p.a || '—')}${p.nota ? ' · ' + esc(p.nota) : ''}</small></span><button type="button" class="icon-act" data-pdel="${p.id}" aria-label="Quitar" title="Quitar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></li>`).join('')}</ul>` : '<p class="muted small">Sin promociones registradas.</p>'}
+      <div class="pro-new"><span class="flabel">Registrar una nueva</span>
+        <div class="row2"><div class="field"><label for="prFe">Fecha</label><input type="date" id="prFe" value="${hoy()}"></div>
+          <div class="field"><label for="prTi">Tipo</label><select id="prTi">${P.tiposPromocion.map(t => `<option>${esc(t)}</option>`).join('')}</select></div></div>
+        <div class="row2"><div class="field"><label for="prDe">Antes</label><input id="prDe" value="${esc(e.puesto || '')}"></div>
+          <div class="field"><label for="prA">Después</label><input id="prA" list="prPues" placeholder="Nuevo puesto"><datalist id="prPues">${puestos.map(v => `<option value="${esc(v)}">`).join('')}</datalist></div></div>
+        <div class="field"><label for="prNo">Nota <span class="muted" style="font-weight:400">(opcional)</span></label><input id="prNo" maxlength="120"></div>
+        <label class="check"><input type="checkbox" id="prAct" checked> Actualizar el puesto de la ficha</label>
+      </div><p class="form-err" id="prErr" role="alert"></p></div>
+      <div class="dlg-f"><button type="button" class="btn ghost" id="prC">Cerrar</button><button class="btn">Registrar</button></div></form>`, { ancho: 600 });
+    $('#prC', d).onclick = () => d.close('cancel');
+    $$('[data-pdel]', d).forEach(b => b.onclick = async () => { await Empleados.editarEmpleado(id, { promociones: (e.promociones || []).filter(p => String(p.id) !== b.dataset.pdel) }); d.close('ok'); toast('Promoción quitada'); promociones(id, main); });
+    $('#prF', d).onsubmit = async ev => {
+      ev.preventDefault();
+      const p = { id: Date.now(), fecha: $('#prFe', d).value, tipo: $('#prTi', d).value, de: $('#prDe', d).value.trim(), a: $('#prA', d).value.trim(), nota: $('#prNo', d).value.trim() };
+      if (!p.fecha || !p.a) { $('#prErr', d).textContent = 'Indica la fecha y el puesto (o situación) nuevo.'; return; }
+      const cambios = { promociones: [...(e.promociones || []), p] };
+      if ($('#prAct', d).checked && p.tipo !== 'Mejora salarial' && p.tipo !== 'Cambio de departamento') cambios.puesto = p.a;
+      if ($('#prAct', d).checked && p.tipo === 'Cambio de departamento' && P.departamentos.includes(p.a)) cambios.departamento = p.a;
+      await Empleados.editarEmpleado(id, cambios); d.close('ok'); toast('Promoción registrada'); Ficus.decir('Anotado. Esto también cuenta en el plan de igualdad.', 'yay');
+      if (main) render(main);
+    };
   }
 
   function previsualizarImport(texto, main) {

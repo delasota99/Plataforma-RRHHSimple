@@ -3,16 +3,16 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.6.0 · fase 6';
+  const VERSION = '0.7.0 · fase 7';
   const NAV = [
     ['', [['inicio', 'Inicio']]],
-    ['Personas', [['empleados', 'Empleados'], ['altas', 'Altas'], ['ausencias', 'Ausencias']]],
+    ['Personas', [['empleados', 'Empleados'], ['altas', 'Altas'], ['ausencias', 'Ausencias'], ['informes', 'Informes']]],
     ['Trabajo diario', [['tareas', 'Tareas'], ['documentos', 'Documentos'], ['calendario', 'Calendario']]],
     ['Calculadoras', [['salarios', 'Salarios'], ['vacaciones', 'Vacaciones'], ['permisos', 'Permisos'], ['nacimiento', 'Nacimiento'], ['indemnizacion', 'Indemnización'], ['finiquito', 'Finiquito']]],
     ['', [['ajustes', 'Ajustes']]]
   ];
   const ETIQ = Object.fromEntries(NAV.flatMap(g => g[1]));
-  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, ausencias: ModAusencias, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, documentos: ModDocumentos, salarios: ModSalarios, permisos: ModPermisos, nacimiento: ModNacimiento, indemnizacion: ModIndemnizacion, finiquito: ModFiniquito, ajustes: ModAjustes };
+  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, ausencias: ModAusencias, informes: ModInformes, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, documentos: ModDocumentos, salarios: ModSalarios, permisos: ModPermisos, nacimiento: ModNacimiento, indemnizacion: ModIndemnizacion, finiquito: ModFiniquito, ajustes: ModAjustes };
   const FASE = {};
   const main = $('#main');
   const ruta = () => { const r = location.hash.slice(1); return r in ETIQ ? r : 'inicio'; };
@@ -140,7 +140,7 @@ const Shell = (() => {
     setTema(tema()); Ficus.init(); pintarCopia(); pintarNav(); render(); Ficus.saludar(); Tareas.comprobarAvisos();
     if (Datos.estado.fallo) toast('Este navegador no permite guardar datos: los cambios se perderán al cerrar.');
   }
-  Empleados.on(() => { pintarNav(); if (['empleados', 'vacaciones', 'ausencias', 'calendario'].includes(ruta()) && !document.querySelector('dialog[open]')) { const y = scrollY; render(); scrollTo(0, y); } });
+  Empleados.on(() => { pintarNav(); if (['empleados', 'vacaciones', 'ausencias', 'calendario', 'informes'].includes(ruta()) && !document.querySelector('dialog[open]')) { const y = scrollY; render(); scrollTo(0, y); } });
   return { VERSION, etiqueta: r => ETIQ[r] || r, pintarNav, tema, setTema, arrancar, refrescar: () => render() };
 })();
 

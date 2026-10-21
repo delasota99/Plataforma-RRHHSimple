@@ -1,11 +1,11 @@
 /*
  * Motor de empleados — funciones puras: validación, filtros e importación/exportación CSV.
- * Modelo: { id, codigo, nombre, apellido1, apellido2, departamento, responsable, centro, puesto, fechaContratacion, salario, fechaBaja, vacaciones: {anio: dias} }
+ * Modelo: { id, codigo, nombre, apellido1, apellido2, sexo ('mujer'|'hombre'), departamento, responsable, centro, puesto, fechaContratacion, salario, fechaBaja, motivoBaja, vacaciones: {anio: dias}, ausencias: [], promociones: [] }
  * nombreCompleto se calcula al leer (normalizar).
  * Pruebas: tests/empleados.test.js
  */
 (function (root) {
-  const COLUMNAS = ['codigo', 'nombre', 'primer_apellido', 'segundo_apellido', 'departamento', 'responsable', 'centro', 'puesto', 'fecha_contratacion', 'salario_anual', 'fecha_baja'];
+  const COLUMNAS = ['codigo', 'nombre', 'primer_apellido', 'segundo_apellido', 'sexo', 'departamento', 'responsable', 'centro', 'puesto', 'fecha_contratacion', 'salario_anual', 'fecha_baja', 'motivo_baja'];
   const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
   /* Separa "Nombre Apellido1 Apellido2" (o "Apellido1 Apellido2, Nombre"). Las partículas (de, del, la…) van con el apellido. */
@@ -19,10 +19,20 @@
     if (acc.length) grupos.push(acc.join(' '));
     return { nombre: t[0], apellido1: grupos[0] || '', apellido2: grupos.slice(1).join(' ') };
   }
+  /* Sexo: 'mujer' | 'hombre' · '' si vacío · null si no se reconoce ("M" sola es ambigua: mujer o masculino). */
+  function sexo(v) {
+    const n = norm(v).replace(/[^a-z]/g, '');
+    if (!n) return '';
+    if (['mujer', 'f', 'femenino', 'fem', 'muj'].includes(n)) return 'mujer';
+    if (['hombre', 'h', 'v', 'varon', 'masculino', 'masc', 'hom'].includes(n)) return 'hombre';
+    return null;
+  }
+  const SEXO = { mujer: 'Mujer', hombre: 'Hombre' };
   const nombreCompleto = e => [e.nombre, e.apellido1, e.apellido2].map(x => String(x || '').trim()).filter(Boolean).join(' ');
   /* Fichas antiguas (solo "nombre" con todo) pasan a nombre + apellidos. */
   function normalizar(e) {
-    const n = e.apellido1 === undefined ? { ...e, ...partirNombre(e.nombre) } : { ...e, apellido2: e.apellido2 || '' };
+    const n0 = e.apellido1 === undefined ? { ...e, ...partirNombre(e.nombre) } : { ...e, apellido2: e.apellido2 || '' };
+    const n = { ...n0, sexo: n0.sexo || '', motivoBaja: n0.motivoBaja || '' };
     return { ...n, nombreCompleto: nombreCompleto(n) };
   }
   /* Orden por apellidos sin tener en cuenta las partículas iniciales ("de la Iglesia" va en la I). */
@@ -63,11 +73,11 @@
   }
 
   const activo = (e, hoy) => !e.fechaBaja || e.fechaBaja >= hoy;
-  function filtrar(lista, { q = '', centro = '', departamento = '', responsable = '', estado = 'activos', hoy } = {}) {
+  function filtrar(lista, { q = '', centro = '', departamento = '', responsable = '', sexo: sx = '', estado = 'activos', hoy } = {}) {
     const nq = norm(q);
     return lista.filter(e =>
       (!nq || norm([e.codigo, nombreCompleto(e), e.departamento, e.responsable, e.puesto].join(' ')).includes(nq)) &&
-      (!centro || e.centro === centro) && (!departamento || e.departamento === departamento) && (!responsable || e.responsable === responsable) &&
+      (!centro || e.centro === centro) && (!departamento || e.departamento === departamento) && (!responsable || e.responsable === responsable) && (!sx || (sx === 'sin' ? !e.sexo : e.sexo === sx)) &&
       (estado === 'todos' || (estado === 'activos') === activo(e, hoy))
     ).sort((a, b) => claveOrden(a).localeCompare(claveOrden(b), 'es'));
   }
@@ -94,7 +104,8 @@
     apellido1: ['primer apellido', 'apellido 1', 'apellido1', '1 apellido', 'apellido'], apellido2: ['segundo apellido', 'apellido 2', 'apellido2', '2 apellido'],
     departamento: ['departamento', 'dpto', 'area'], responsable: ['responsable', 'jefe', 'manager'], centro: ['centro', 'centro de trabajo'],
     puesto: ['puesto', 'cargo'], fechaContratacion: ['fecha contratacion', 'fecha_contratacion', 'fecha alta', 'antiguedad', 'fecha de contratacion'],
-    salario: ['salario', 'salario anual', 'salario_anual', 'bruto anual', 'salario bruto anual'], fechaBaja: ['fecha baja', 'fecha_baja', 'fecha de baja'] };
+    salario: ['salario', 'salario anual', 'salario_anual', 'bruto anual', 'salario bruto anual'], fechaBaja: ['fecha baja', 'fecha_baja', 'fecha de baja'],
+    sexo: ['sexo', 'genero'], motivoBaja: ['motivo baja', 'motivo_baja', 'motivo de baja', 'causa baja', 'causa de baja'] };
   /* Devuelve { empleados, errores:[{fila, mensajes}] } sin guardar nada. */
   function importarCSV(texto, existentes = [], { departamentos = null } = {}) {
     const filas = parseCSV(texto); if (filas.length < 2) return { empleados: [], errores: [{ fila: 1, mensajes: ['El archivo no tiene filas de datos'] }] };
@@ -106,11 +117,12 @@
       const nom = idx.apellido1 >= 0 || !(idx.completo >= 0) ? { nombre: v('nombre'), apellido1: v('apellido1'), apellido2: v('apellido2') } : partirNombre(v('completo'));
       const dep = v('departamento'), depOk = departamentos && dep ? departamentoValido(dep, departamentos) : dep;
       const e = { codigo: v('codigo'), ...nom, departamento: depOk || dep, responsable: v('responsable'), centro: v('centro'), puesto: v('puesto'),
-        fechaContratacion: fecha(v('fechaContratacion')), salario: importe(v('salario')), fechaBaja: fecha(v('fechaBaja')), vacaciones: {} };
+        fechaContratacion: fecha(v('fechaContratacion')), salario: importe(v('salario')), fechaBaja: fecha(v('fechaBaja')), sexo: sexo(v('sexo')), motivoBaja: v('motivoBaja'), vacaciones: {} };
       const m = [];
       if (e.fechaContratacion === null) m.push(`Fecha de contratación no válida: "${v('fechaContratacion')}"`);
       if (e.fechaBaja === null) m.push(`Fecha de baja no válida: "${v('fechaBaja')}"`);
       if (e.salario === null) m.push(`Salario no válido: "${v('salario')}"`);
+      if (e.sexo === null) m.push(`Sexo no reconocido: "${v('sexo')}" (usa Mujer u Hombre)`);
       if (departamentos && dep && !depOk) m.push(`Departamento "${dep}" no está en la lista (${departamentos.join(', ')})`);
       if (!m.length) m.push(...validar(e, [...existentes, ...empleados]));
       if (m.length) errores.push({ fila: i + 2, mensajes: m }); else empleados.push(e);
@@ -121,10 +133,10 @@
     const q = s => { s = String(s ?? ''); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     const f = s => s ? s.split('-').reverse().join('/') : '';
     const n = x => x === '' || x == null ? '' : String(x).replace('.', ',');
-    return '﻿' + [COLUMNAS.join(';'), ...lista.map(e => [e.codigo, e.nombre, e.apellido1, e.apellido2, e.departamento, e.responsable, e.centro, e.puesto, f(e.fechaContratacion), n(e.salario), f(e.fechaBaja)].map(q).join(';'))].join('\r\n') + '\r\n';
+    return '﻿' + [COLUMNAS.join(';'), ...lista.map(e => [e.codigo, e.nombre, e.apellido1, e.apellido2, SEXO[e.sexo] || '', e.departamento, e.responsable, e.centro, e.puesto, f(e.fechaContratacion), n(e.salario), f(e.fechaBaja), e.motivoBaja || ''].map(q).join(';'))].join('\r\n') + '\r\n';
   }
 
-  const api = { COLUMNAS, partirNombre, nombreCompleto, normalizar, departamentoValido, fecha, importe, validar, activo, filtrar, valores, parseCSV, importarCSV, exportarCSV };
+  const api = { COLUMNAS, SEXO, sexo, partirNombre, nombreCompleto, normalizar, departamentoValido, fecha, importe, validar, activo, filtrar, valores, parseCSV, importarCSV, exportarCSV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.MotorEmpleados = api;
 })(typeof window !== 'undefined' ? window : globalThis);

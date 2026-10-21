@@ -78,5 +78,17 @@ ok('Normalizar ficha nueva no la toca', E.normalizar({ nombre: 'Ana', apellido1:
 ok('Orden ignora partículas (de la Iglesia va en la I)', E.filtrar([{ nombre: 'A', apellido1: 'Fernández' }, { nombre: 'B', apellido1: 'de la Iglesia' }], { estado: 'todos', hoy: '2026-10-21' })[0].nombre === 'A');
 ok('Orden por apellidos', E.filtrar([{ nombre: 'Zoe', apellido1: 'Abad' }, { nombre: 'Ana', apellido1: 'Ruiz' }], { estado: 'todos', hoy: '2026-10-21' })[0].nombre === 'Zoe');
 
+/* Sexo y motivo de baja (fase 7) */
+ok('Sexo: Mujer, F, femenino → mujer', ['Mujer', 'F', 'femenino', ' MUJER '].every(x => E.sexo(x) === 'mujer'));
+ok('Sexo: Hombre, H, V, varón, masculino → hombre', ['Hombre', 'H', 'V', 'Varón', 'masculino'].every(x => E.sexo(x) === 'hombre'));
+ok('Sexo: "M" sola es ambigua → no válido', E.sexo('M') === null);
+ok('Sexo vacío → vacío', E.sexo('') === '');
+const cs = E.importarCSV('codigo;nombre;primer apellido;sexo;fecha contratacion;fecha baja;motivo de baja\nA1;Ana;Ruiz;Mujer;01/01/2020;;\nA2;Luis;Gil;H;01/01/2021;30/06/2026;Baja voluntaria\nA3;Eva;Sanz;M;01/01/2022;;\n');
+ok('CSV con sexo y motivo de baja', cs.empleados.length === 2 && cs.empleados[0].sexo === 'mujer' && cs.empleados[1].sexo === 'hombre' && cs.empleados[1].motivoBaja === 'Baja voluntaria');
+ok('CSV: sexo ambiguo da error en su fila', cs.errores.length === 1 && cs.errores[0].fila === 4 && /Sexo/.test(cs.errores[0].mensajes[0]));
+const ida = E.importarCSV(E.exportarCSV(cs.empleados));
+ok('CSV: exportar e importar conserva sexo y motivo', ida.empleados[0].sexo === 'mujer' && ida.empleados[1].motivoBaja === 'Baja voluntaria');
+ok('Filtro por sexo y "sin indicar"', E.filtrar([{ nombre: 'A', apellido1: 'B', sexo: 'mujer' }, { nombre: 'C', apellido1: 'D', sexo: '' }], { sexo: 'sin', estado: 'todos', hoy: '2026-10-21' }).length === 1);
+
 console.log(fallos ? `\n${fallos} de ${total} pruebas fallidas` : `\nTodas las pruebas correctas (${total})`);
 process.exit(fallos ? 1 : 0);

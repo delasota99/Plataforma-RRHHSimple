@@ -889,3 +889,63 @@ main[data-anim] .aus-card{animation:enter 320ms var(--ease-out) both;animation-d
 .empty-mini{grid-column:1/-1;padding:24px;text-align:center;border:1.5px dashed var(--line);border-radius:var(--radius)}
 @media (max-width:900px){.aus-stats{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.aus-list{grid-template-columns:1fr}.aus-stats .stat b{font-size:30px}}
+
+/* ---------- Fase 7: informes ---------- */
+:root{--c-mujer:#7a5aa6;--c-hombre:#3f6f8f}
+:root[data-theme=dark]{--c-mujer:#b59ad8;--c-hombre:#7fb0cf}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--c-mujer:#b59ad8;--c-hombre:#7fb0cf}}
+.inf-sel{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:16px}
+.inf-sel .pc-ico svg{width:18px;height:18px}
+.inf-bar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.inf-bar .grow{flex:1}
+.inf-bar .field{margin:0}
+.inf-bar .field input,.inf-bar .field select{padding:9px 12px;font-size:14px}
+.inf-bar .btn svg{width:16px;height:16px}
+.inf-doc{padding:26px}
+.inf-h{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:16px;border-bottom:2px solid var(--brand);margin-bottom:14px}
+.inf-h small{font-family:var(--font-d);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.inf-h h2{font-size:26px;font-weight:600;margin:2px 0}
+.inf-h p{margin:0;font-family:var(--font-d);font-weight:500}
+.inf-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12.5px;color:var(--muted);text-align:right;max-width:360px}
+.sx-ley{display:flex;gap:16px;font-size:13px;margin-bottom:6px}
+.sx-ley span{display:inline-flex;align-items:center;gap:6px}
+.sx-ley i,.sx-bar i{display:inline-block;height:10px;border-radius:3px}
+.sx-ley i{width:14px}
+.sx-ley .m,.sx-bar .m{background:var(--c-mujer)} .sx-ley .h,.sx-bar .h{background:var(--c-hombre)}
+.sx-bar{display:flex;width:120px;height:10px;border-radius:3px;overflow:hidden;background:var(--surface-2)}
+.sx-bar i{border-radius:0;height:100%}
+.inf-sec{margin-top:20px}
+.inf-sec h3{font-size:15px;font-weight:600;margin:0 0 8px}
+.inf-sec h3 span{font-family:var(--font-b);font-weight:400;font-size:12.5px;color:var(--muted);margin-left:4px}
+.inf-tbl{font-size:14px}
+.inf-tbl th{font-size:12px}
+.inf-tbl td:not(:first-child),.inf-tbl th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.inf-tbl.det td,.inf-tbl.det th{text-align:left!important;white-space:nowrap}
+.inf-tbl tr.tot td{font-weight:600;border-top:1.5px solid var(--border-strong)}
+.inf-tbl td.barra{width:130px}
+.inf-det{margin-top:20px;border-top:1px dashed var(--line);padding-top:12px}
+.inf-det summary{cursor:pointer;font-family:var(--font-d);font-weight:500;display:flex;align-items:center;justify-content:space-between;list-style:none}
+.inf-det summary::-webkit-details-marker{display:none}
+.inf-det[open] summary svg{transform:rotate(180deg)}
+.inf-det .tbl-wrap{margin-top:10px;max-height:420px;overflow:auto}
+.pro-list{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:8px}
+.pro-list li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface-2)}
+.pro-list li span:nth-child(2){flex:1}
+.pro-list small{display:block;color:var(--muted);font-size:12.5px}
+.pro-new{display:flex;flex-direction:column;gap:12px;padding:12px;border-radius:14px;border:1.5px dashed var(--border-strong)}
+@media (max-width:760px){.inf-doc{padding:16px}.inf-meta{align-items:flex-start;text-align:left}.no-xs{display:none}}
+/* Impresión / PDF: solo el informe, en claro */
+@media print{
+  @page{size:A4;margin:14mm}
+  :root{--bg:#fff;--surface:#fff;--surface-2:#f1efe6;--text:#1a1a1a;--muted:#555;--line:#ddd;--border-strong:#bbb;--brand:#4a4732;--c-mujer:#7a5aa6;--c-hombre:#3f6f8f}
+  body{background:#fff!important;color:#1a1a1a}
+  .topbar,.side,.ficus,.toast,.scrim,.no-print,#cmdk,#taskDlg{display:none!important}
+  .app{display:block!important}
+  main{padding:0!important;max-width:none!important}
+  .card,.inf-doc{box-shadow:none!important;border:0!important;padding:0!important}
+  .inf-det .tbl-wrap{max-height:none;overflow:visible}
+  .inf-sec{break-inside:avoid}
+  .sx-bar i,.sx-ley i{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .note{animation:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (max-width:760px){.inf-sel{grid-template-columns:1fr 1fr}.inf-sel small{display:none}.inf-tbl{font-size:13px}}
