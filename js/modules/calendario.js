@@ -174,5 +174,8 @@ const ModCalendario = (() => {
 
   /* Próximos festivos para el panel de inicio (usa las capas activas del calendario). */
   function proximos(n = 4) { const c = cfg(); return MotorFestivos.proximos(P.festivos, hoyISO(), c.capas, c.empresa ? empresa() : [], n); }
-  return { render, proximos, etiquetaCapa };
+  /* Para el mini calendario del panel: datos del año con las capas activas, e ir a un día. */
+  const datosDe = anio => { const c = { ...cfg(), anio }; return { ...datos(c), capas: c.capas }; };
+  const irA = f => { setCfg({ ...cfg(), vista: 'mes', anio: Number(f.slice(0, 4)), mes: Number(f.slice(5, 7)) - 1, sel: f }); location.hash = '#calendario'; };
+  return { render, proximos, etiquetaCapa, datosDe, irA };
 })();

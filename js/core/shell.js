@@ -3,43 +3,80 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.8.2 · procesos';
-  const NAV = [
-    ['', [['inicio', 'Inicio']]],
-    ['Personas', [['empleados', 'Empleados'], ['ausencias', 'Ausencias'], ['informes', 'Informes']]],
-    ['Procesos', [['reclutamiento', 'Reclutamiento'], ['altas', 'Altas'], ['pruebas', 'Periodos de prueba'], ['promociones', 'Promociones'], ['salidas', 'Bajas y salidas']]],
-    ['Trabajo diario', [['tareas', 'Tareas'], ['documentos', 'Documentos'], ['calendario', 'Calendario']]],
-    ['Calculadoras', [['salarios', 'Salarios'], ['vacaciones', 'Vacaciones'], ['permisos', 'Permisos'], ['nacimiento', 'Nacimiento'], ['indemnizacion', 'Indemnización'], ['finiquito', 'Finiquito']]],
-    ['', [['ajustes', 'Ajustes']]]
+  const VERSION = '0.9.0 · panel y menú';
+  /* Secciones de la barra lateral (acordeón) y su página de resumen. */
+  const SECCIONES = [
+    { id: 'personas', nombre: 'Personas', desc: 'La plantilla, sus ausencias y los informes de igualdad.', items: [['empleados', 'Empleados'], ['ausencias', 'Ausencias'], ['informes', 'Informes']] },
+    { id: 'procesos', nombre: 'Procesos', desc: 'Del reclutamiento a la salida: cada etapa de la vida laboral, con sus pasos y avisos.', items: [['reclutamiento', 'Reclutamiento'], ['altas', 'Altas'], ['pruebas', 'Periodos de prueba'], ['promociones', 'Promociones'], ['salidas', 'Bajas y salidas']] },
+    { id: 'trabajo', nombre: 'Trabajo diario', desc: 'Tareas, documentos listos para enviar y el calendario.', items: [['tareas', 'Tareas'], ['documentos', 'Documentos'], ['calendario', 'Calendario']] },
+    { id: 'calculadoras', nombre: 'Calculadoras', desc: 'Cálculos del convenio y del Estatuto, con su base legal.', items: [['salarios', 'Salarios'], ['vacaciones', 'Vacaciones'], ['permisos', 'Permisos'], ['nacimiento', 'Nacimiento'], ['indemnizacion', 'Indemnización'], ['finiquito', 'Finiquito']] }
   ];
+  const NAV = [['', [['inicio', 'Inicio']]], ...SECCIONES.map(x => [x.nombre, [[x.id, x.nombre], ...x.items]]), ['', [['ajustes', 'Ajustes']]]];
   const ETIQ = Object.fromEntries(NAV.flatMap(g => g[1]));
   const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, ausencias: ModAusencias, informes: ModInformes, reclutamiento: ModReclutamiento, pruebas: ModPruebas, promociones: ModPromociones, salidas: ModSalidas, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, documentos: ModDocumentos, salarios: ModSalarios, permisos: ModPermisos, nacimiento: ModNacimiento, indemnizacion: ModIndemnizacion, finiquito: ModFiniquito, ajustes: ModAjustes };
+  SECCIONES.forEach(x => { MODULOS[x.id] = { render: m => ModSecciones.render(m, x) }; });
   const FASE = {};
   const main = $('#main');
   const ruta = () => { const r = location.hash.slice(1); return r in ETIQ ? r : 'inicio'; };
 
   /* ---------- Navegación ---------- */
+  /* Avisos por herramienta (contadores rojos). */
+  function avisos() {
+    const hoyN = Fecha.iso(Fecha.hoy()), n = {};
+    n.tareas = Tareas.pendientes().vencidas.length;
+    n.altas = Altas.enCurso().filter(a => MotorAltas.estado(a) === 'bloqueada').length;
+    n.ausencias = Ausencias.todas().filter(a => MotorAusencias.estado(a, hoyN) === 'sin-confirmar').length;
+    n.pruebas = Procesos.Pruebas.todas().filter(p => MotorProcesos.estadoPrueba(p, hoyN) === 'sin-resolver').length;
+    n.salidas = Procesos.Salidas.todas().filter(x => MotorProcesos.estadoSalida(RRHH_PARAMS.procesos.salida, x, hoyN) === 'atrasada').length;
+    return n;
+  }
+  const TXT_AVISO = { tareas: 'vencidas', altas: 'bloqueadas', ausencias: 'sin confirmar', pruebas: 'sin resolver', salidas: 'atrasadas' };
+  /* Sección abierta del acordeón (una cada vez; se recuerda). */
+  let abierta = (() => { try { return localStorage.getItem('rrhh.nav'); } catch (e) { return null; } })();
+  const guardarAbierta = () => { try { localStorage.setItem('rrhh.nav', abierta || ''); } catch (e) {} };
+  const seccionDe = r => SECCIONES.find(x => x.id === r || x.items.some(i => i[0] === r));
+  const LOCK = '<span class="soon lock" title="Bloqueada"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>';
+  function enlace(r, l, n) {
+    const extra = n[r] ? `<span class="badge" aria-label="${n[r]} ${TXT_AVISO[r]}">${n[r]}</span>` : r === 'empleados' && Empleados.configurado() && !Empleados.desbloqueado ? LOCK : '';
+    return `<a href="#${r}" data-r="${r}">${icon(r)}<span class="nl">${l}</span>${extra}</a>`;
+  }
   function pintarNav() {
-    const venc = Tareas.pendientes().vencidas.length, bloq = Altas.enCurso().filter(a => MotorAltas.estado(a) === 'bloqueada').length;
-    const hoyN = Fecha.iso(Fecha.hoy()), sinConf = Ausencias.todas().filter(a => MotorAusencias.estado(a, hoyN) === 'sin-confirmar').length;
-    const pruebaSR = Procesos.Pruebas.todas().filter(p => MotorProcesos.estadoPrueba(p, hoyN) === 'sin-resolver').length, salAtr = Procesos.Salidas.todas().filter(x => MotorProcesos.estadoSalida(RRHH_PARAMS.procesos.salida, x, hoyN) === 'atrasada').length;
-    $('#nav').innerHTML = '<div class="nav-pill" id="pill" aria-hidden="true"></div>' + NAV.map(([g, items]) =>
-      (g ? `<div class="nav-group">${g}</div>` : '') + items.map(([r, l]) =>
-        `<a href="#${r}" data-r="${r}">${icon(r)}${l}${r === 'tareas' && venc ? `<span class="badge" aria-label="${venc} vencidas">${venc}</span>` : r === 'altas' && bloq ? `<span class="badge" aria-label="${bloq} bloqueadas">${bloq}</span>` : r === 'ausencias' && sinConf ? `<span class="badge" aria-label="${sinConf} sin confirmar">${sinConf}</span>` : r === 'pruebas' && pruebaSR ? `<span class="badge" aria-label="${pruebaSR} sin resolver">${pruebaSR}</span>` : r === 'salidas' && salAtr ? `<span class="badge" aria-label="${salAtr} atrasadas">${salAtr}</span>` : r === 'empleados' && Empleados.configurado() ? (Empleados.desbloqueado ? '' : '<span class="soon lock" title="Bloqueada"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>') : (!MODULOS[r] ? '<span class="soon" title="Llega en una próxima fase">·</span>' : '')}</a>`).join('')).join('');
+    const n = avisos();
+    const pillPrev = $('#pill');
+    $('#nav').innerHTML = '<div class="nav-pill" id="pill" aria-hidden="true"></div>' + enlace('inicio', 'Inicio', n) +
+      SECCIONES.map(x => { const suma = x.items.reduce((a, [r]) => a + (n[r] || 0), 0), op = abierta === x.id;
+        return `<div class="nav-sec${op ? ' open' : ''}" data-sec="${x.id}">
+          <div class="nav-sec-h"><a href="#${x.id}" data-r="${x.id}" class="nav-sec-t" title="Resumen de ${x.nombre}">${icon(x.id)}<span class="nl">${x.nombre}</span>${suma ? `<span class="badge sec-badge" aria-label="${suma} avisos">${suma}</span>` : ''}</a>
+            <button type="button" class="nav-tog" data-tog="${x.id}" aria-expanded="${op}" aria-controls="ns-${x.id}" aria-label="${op ? 'Ocultar' : 'Mostrar'} ${x.nombre}"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div>
+          <div class="nav-items" id="ns-${x.id}" ${op ? '' : 'inert'}><div>${x.items.map(([r, l]) => enlace(r, l, n)).join('')}</div></div></div>`; }).join('') +
+      enlace('ajustes', 'Ajustes', n);
+    if (pillPrev) $('#pill').replaceWith(pillPrev);   // conserva la píldora para que se deslice en vez de saltar
+    $$('#nav [data-tog]').forEach(b => b.onclick = () => abrir(abierta === b.dataset.tog ? null : b.dataset.tog));
     marcar();
+  }
+  /* Abre una sección (y cierra las demás) sin repintar: animación suave. */
+  function abrir(id) {
+    abierta = id; guardarAbierta();
+    $$('#nav .nav-sec').forEach(sec => {
+      const op = sec.dataset.sec === id, items = $('.nav-items', sec), t = $('.nav-tog', sec);
+      sec.classList.toggle('open', op); t.setAttribute('aria-expanded', op); t.setAttribute('aria-label', `${op ? 'Ocultar' : 'Mostrar'} ${SECCIONES.find(x => x.id === sec.dataset.sec).nombre}`);
+      if (op) items.removeAttribute('inert'); else items.setAttribute('inert', '');
+    });
+    marcar(); setTimeout(marcar, reduceMotion ? 0 : 300);
   }
   function marcar() {
     const r = ruta();
     $$('#nav a').forEach(a => a.dataset.r === r ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
     const a = $('#nav a[aria-current=page]'), pill = $('#pill'); if (!pill) return;
-    if (!a) { pill.style.opacity = 0; return; }
-    pill.style.opacity = 1; pill.style.height = a.offsetHeight + 'px'; pill.style.transform = `translateY(${a.offsetTop}px)`;
+    if (!a || a.closest('.nav-sec:not(.open) .nav-items')) { pill.style.opacity = 0; return; }
+    const top = a.getBoundingClientRect().top - $('#nav').getBoundingClientRect().top;
+    pill.style.opacity = 1; pill.style.height = a.offsetHeight + 'px'; pill.style.transform = `translateY(${top}px)`;
   }
   /* La animación de entrada solo se ve al cambiar de pantalla, nunca al repintar la misma (sin "reinicio"). */
   let animT;
   function animarEntrada() { main.setAttribute('data-anim', ''); clearTimeout(animT); animT = setTimeout(() => main.removeAttribute('data-anim'), 700); }
   function render() {
-    const r = ruta(); marcar(); animarEntrada();
+    const r = ruta(), sec = seccionDe(r); if (sec && abierta !== sec.id) { abierta = sec.id; guardarAbierta(); } pintarNav(); animarEntrada();
     if (MODULOS[r]) MODULOS[r].render(main);
     else main.innerHTML = `<div class="view empty"><div><div class="ico">${icon(r)}</div><h1 style="font-size:30px;font-weight:600">${esc(ETIQ[r])}</h1>
       <p>Ya está definida y llega en la <b>fase ${FASE[r]}</b>.</p>
@@ -143,7 +180,7 @@ const Shell = (() => {
     if (Datos.estado.fallo) toast('Este navegador no permite guardar datos: los cambios se perderán al cerrar.');
   }
   Empleados.on(() => { pintarNav(); if (['empleados', 'vacaciones', 'ausencias', 'calendario', 'informes', 'pruebas', 'promociones', 'salidas'].includes(ruta()) && !document.querySelector('dialog[open]')) { const y = scrollY; render(); scrollTo(0, y); } });
-  return { VERSION, etiqueta: r => ETIQ[r] || r, pintarNav, tema, setTema, arrancar, refrescar: () => render() };
+  return { VERSION, SECCIONES, avisos, etiqueta: r => ETIQ[r] || r, pintarNav, tema, setTema, arrancar, refrescar: () => render() };
 })();
 
 Shell.arrancar();
