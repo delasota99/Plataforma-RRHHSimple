@@ -61,8 +61,8 @@ ok('CSV: 2 filas válidas importadas', r.empleados.length === 2);
 ok('CSV: comillas con punto y coma', r.empleados[0].apellido1 === 'García;');
 ok('CSV: "Nombre y apellidos" se separa', r.empleados[1].nombre === 'Pablo' && r.empleados[1].apellido1 === 'Gil' && r.empleados[1].apellido2 === 'Soto');
 ok('CSV: departamento normalizado a la lista', r.empleados[0].departamento === 'Fábrica' && r.empleados[1].departamento === 'Homologación y Registros');
-ok('CSV: errores con número de fila (duplicado, fecha, departamento)', r.errores.map(e => e.fila).join() === '4,5,6');
-ok('CSV: el error de departamento lo explica', /no está en la lista/.test(r.errores[2].mensajes.join()));
+ok('CSV: código existente no duplica, actualiza (fila 4 sin cambios útiles → nada)', r.errores.map(e => e.fila).join() === '5,6' && r.actualizaciones.length === 1 && r.actualizaciones[0].cambios.nombre === 'Duplicado');
+ok('CSV: el error de departamento lo explica', /no está en la lista/.test(r.errores[1].mensajes.join()));
 const vuelta = E.importarCSV(E.exportarCSV(r.empleados), [], { departamentos: DEP });
 ok('CSV: exportar e importar conserva nombre y apellidos', vuelta.empleados.length === 2 && vuelta.empleados[1].fechaContratacion === '2021-11-02' && vuelta.empleados[1].apellido2 === 'Soto');
 ok('CSV con columnas de apellidos y comas como separador', E.importarCSV('codigo,nombre,primer apellido,segundo apellido,fecha_contratacion\nX1,Ana,López,,01/02/2024\n').empleados[0].apellido1 === 'López');
@@ -90,5 +90,11 @@ const ida = E.importarCSV(E.exportarCSV(cs.empleados));
 ok('CSV: exportar e importar conserva sexo y motivo', ida.empleados[0].sexo === 'mujer' && ida.empleados[1].motivoBaja === 'Baja voluntaria');
 ok('Filtro por sexo y "sin indicar"', E.filtrar([{ nombre: 'A', apellido1: 'B', sexo: 'mujer' }, { nombre: 'C', apellido1: 'D', sexo: '' }], { sexo: 'sin', estado: 'todos', hoy: '2026-10-21' }).length === 1);
 
+/* Actualizar fichas existentes por código */
+const ex = [{ id: 7, codigo: 'E-001', nombre: 'Ana', apellido1: 'Pérez', apellido2: '', sexo: '', departamento: 'Fábrica', centro: 'Fábrica (Talavera)', puesto: 'Producción', fechaContratacion: '2020-01-01', salario: 22000, fechaBaja: '' }];
+const up = E.importarCSV('codigo;nombre;primer apellido;sexo;departamento;salario anual;fecha contratacion\nE-001;Ana;Pérez;Mujer;;23000;\nE-002;Luis;Gil;Hombre;Comercial;;01/02/2024\n', ex, { departamentos: DEP });
+ok('Importar con código existente: actualiza, no duplica', up.empleados.length === 1 && up.empleados[0].codigo === 'E-002' && up.actualizaciones.length === 1);
+ok('Actualiza solo lo que cambia y no vacía datos (departamento vacío se mantiene)', JSON.stringify(up.actualizaciones[0].cambios) === JSON.stringify({ sexo: 'mujer', salario: 23000 }), JSON.stringify(up.actualizaciones[0].cambios));
+ok('Código repetido dentro del archivo: error', E.importarCSV('codigo;sexo\nE-001;Mujer\ne-001;Hombre\n', ex).errores.length === 1);
 console.log(fallos ? `\n${fallos} de ${total} pruebas fallidas` : `\nTodas las pruebas correctas (${total})`);
 process.exit(fallos ? 1 : 0);

@@ -59,6 +59,8 @@ const Empleados = (() => {
   async function editarEmpleado(id, cambios) { const e = lista.find(x => x.id === id); if (e) { Object.assign(e, cambios); delete e.nombreCompleto; await guardar(); } return e && MotorEmpleados.normalizar(e); }
   async function eliminarEmpleado(id) { const i = lista.findIndex(x => x.id === id); if (i < 0) return null; const [e] = lista.splice(i, 1); await guardar(); return e; }
   async function restaurar(e) { lista.push(e); await guardar(); }
+  /* Aplica varias actualizaciones de una vez (importación de CSV con códigos existentes). */
+  async function actualizarVarios(lst) { lst.forEach(({ id, cambios }) => { const e = lista.find(x => x.id === id); if (e) Object.assign(e, cambios); }); await guardar(); return lst.length; }
   async function importar(nuevos) { nuevos.forEach(e => lista.push(limpiar({ ...e, id: nuevoId(), vacaciones: e.vacaciones || {} }))); await guardar(); return nuevos.length; }
 
   return {
@@ -66,7 +68,7 @@ const Empleados = (() => {
     get desbloqueado() { return !!clave; },
     todos: () => lista.map(e => MotorEmpleados.normalizar(structuredClone(e))),
     buscar: id => { const e = lista.find(x => x.id === id); return e ? MotorEmpleados.normalizar(structuredClone(e)) : null; },
-    crearEmpleado, editarEmpleado, eliminarEmpleado, restaurar, importar,
+    crearEmpleado, editarEmpleado, eliminarEmpleado, restaurar, importar, actualizarVarios,
     on: fn => (oyentes.add(fn), () => oyentes.delete(fn))
   };
 })();

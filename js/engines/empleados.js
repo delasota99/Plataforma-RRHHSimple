@@ -106,12 +106,13 @@
     puesto: ['puesto', 'cargo'], fechaContratacion: ['fecha contratacion', 'fecha_contratacion', 'fecha alta', 'antiguedad', 'fecha de contratacion'],
     salario: ['salario', 'salario anual', 'salario_anual', 'bruto anual', 'salario bruto anual'], fechaBaja: ['fecha baja', 'fecha_baja', 'fecha de baja'],
     sexo: ['sexo', 'genero'], motivoBaja: ['motivo baja', 'motivo_baja', 'motivo de baja', 'causa baja', 'causa de baja'] };
-  /* Devuelve { empleados, errores:[{fila, mensajes}] } sin guardar nada. */
+  /* Devuelve { empleados (nuevos), actualizaciones:[{id, codigo, nombre, cambios}], errores:[{fila, mensajes}] } sin guardar nada.
+     Si el código ya existe, la fila ACTUALIZA esa ficha con las columnas que traiga rellenas (no duplica ni borra datos). */
   function importarCSV(texto, existentes = [], { departamentos = null } = {}) {
     const filas = parseCSV(texto); if (filas.length < 2) return { empleados: [], errores: [{ fila: 1, mensajes: ['El archivo no tiene filas de datos'] }] };
     const cab = filas[0].map(h => norm(h).replace(/[_º.]/g, ' ').replace(/\s+/g, ' '));
     const idx = Object.fromEntries(Object.entries(ALIAS).map(([k, al]) => [k, cab.findIndex(h => al.includes(h))]));
-    const empleados = [], errores = [];
+    const empleados = [], errores = [], actualizaciones = [];
     filas.slice(1).forEach((f, i) => {
       const v = k => idx[k] >= 0 ? (f[idx[k]] || '').trim() : '';
       const nom = idx.apellido1 >= 0 || !(idx.completo >= 0) ? { nombre: v('nombre'), apellido1: v('apellido1'), apellido2: v('apellido2') } : partirNombre(v('completo'));
@@ -124,10 +125,21 @@
       if (e.salario === null) m.push(`Salario no válido: "${v('salario')}"`);
       if (e.sexo === null) m.push(`Sexo no reconocido: "${v('sexo')}" (usa Mujer u Hombre)`);
       if (departamentos && dep && !depOk) m.push(`Departamento "${dep}" no está en la lista (${departamentos.join(', ')})`);
+      const previo = e.codigo && existentes.find(x => norm(x.codigo) === norm(e.codigo));
+      if (previo && !m.length) {
+        // Actualización: solo columnas presentes y con valor; nunca se vacía un dato existente.
+        const cambios = {};
+        const poner = (k, val) => { if (val !== '' && val !== null && val !== undefined && val !== previo[k]) cambios[k] = val; };
+        ['nombre', 'apellido1', 'apellido2'].forEach(k => poner(k, e[k]));
+        ['sexo', 'departamento', 'responsable', 'centro', 'puesto', 'fechaContratacion', 'salario', 'fechaBaja', 'motivoBaja'].forEach(k => poner(k, e[k]));
+        if (actualizaciones.some(a => a.id === previo.id)) errores.push({ fila: i + 2, mensajes: [`El código ${e.codigo} está repetido en el archivo`] });
+        else if (Object.keys(cambios).length) actualizaciones.push({ id: previo.id, codigo: previo.codigo, nombre: nombreCompleto(previo), cambios });
+        return;
+      }
       if (!m.length) m.push(...validar(e, [...existentes, ...empleados]));
       if (m.length) errores.push({ fila: i + 2, mensajes: m }); else empleados.push(e);
     });
-    return { empleados, errores };
+    return { empleados, actualizaciones, errores };
   }
   function exportarCSV(lista) {
     const q = s => { s = String(s ?? ''); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };

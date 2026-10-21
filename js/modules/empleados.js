@@ -182,14 +182,24 @@ const ModEmpleados = (() => {
 
   function previsualizarImport(texto, main) {
     const r = MotorEmpleados.importarCSV(texto, Empleados.todos(), { departamentos: P.departamentos });
+    const ETQ = { nombre: 'nombre', apellido1: '1.er apellido', apellido2: '2.º apellido', sexo: 'sexo', departamento: 'departamento', responsable: 'responsable', centro: 'centro', puesto: 'puesto', fechaContratacion: 'contratación', salario: 'salario', fechaBaja: 'fecha de baja', motivoBaja: 'motivo de baja' };
+    const val = (k, v) => k === 'sexo' ? MotorEmpleados.SEXO[v] : k === 'salario' ? euros(v) : /^fecha/.test(k) ? Fecha.larga(Fecha.parse(v)) : v;
+    const total = r.empleados.length + r.actualizaciones.length;
     const d = abrirModal(`<div class="dlg-b"><h2 style="font-size:20px;font-weight:600">Importar empleados</h2>
-      <p><b>${r.empleados.length}</b> empleados listos para importar${r.errores.length ? ` · <b class="danger">${r.errores.length}</b> filas con errores (no se importarán)` : ''}.</p>
+      <p><b>${r.empleados.length}</b> nuevos · <b>${r.actualizaciones.length}</b> fichas que se actualizan${r.errores.length ? ` · <b class="danger">${r.errores.length}</b> filas con errores (no se importarán)` : ''}.</p>
       ${r.errores.length ? `<ul class="imp-err">${r.errores.slice(0, 20).map(x => `<li>Fila ${x.fila}: ${x.mensajes.map(esc).join(' · ')}</li>`).join('')}${r.errores.length > 20 ? `<li>…y ${r.errores.length - 20} más</li>` : ''}</ul>` : ''}
-      ${r.empleados.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Nombre</th><th>Departamento</th><th>Contratación</th></tr></thead><tbody>${r.empleados.slice(0, 8).map(e => `<tr><td>${esc(e.codigo)}</td><td>${esc(MotorEmpleados.nombreCompleto(e))}</td><td>${esc(e.departamento)}</td><td>${e.fechaContratacion ? Fecha.larga(Fecha.parse(e.fechaContratacion)) : ''}</td></tr>`).join('')}</tbody></table></div>${r.empleados.length > 8 ? `<p class="muted small">…y ${r.empleados.length - 8} más</p>` : ''}` : ''}
-      <p class="muted small">Columnas reconocidas: ${MotorEmpleados.COLUMNAS.join(', ')} (también vale una sola columna “nombre y apellidos”). Departamentos: ${P.departamentos.join(', ')}. Separador ; o , · fechas dd/mm/aaaa.</p></div>
-      <div class="dlg-f"><button class="btn ghost" id="iCancel">Cancelar</button><button class="btn" id="iOk" ${r.empleados.length ? '' : 'disabled'}>Importar ${r.empleados.length}</button></div>`, { ancho: 680 });
+      ${r.actualizaciones.length ? `<h3 class="imp-h">Se actualizan (por código)</h3><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Empleado</th><th>Cambios</th></tr></thead><tbody>${r.actualizaciones.slice(0, 12).map(u => `<tr><td>${esc(u.codigo)}</td><td>${esc(u.nombre)}</td><td>${Object.entries(u.cambios).map(([k, v]) => `${ETQ[k]}: <b>${esc(val(k, v))}</b>`).join(' · ')}</td></tr>`).join('')}</tbody></table></div>${r.actualizaciones.length > 12 ? `<p class="muted small">…y ${r.actualizaciones.length - 12} más.</p>` : ''}` : ''}
+      ${r.empleados.length ? `<h3 class="imp-h">Nuevos</h3><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Nombre</th><th>Sexo</th><th>Departamento</th></tr></thead><tbody>${r.empleados.slice(0, 8).map(e => `<tr><td>${esc(e.codigo)}</td><td>${esc(MotorEmpleados.nombreCompleto(e))}</td><td>${MotorEmpleados.SEXO[e.sexo] || '—'}</td><td>${esc(e.departamento)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      ${!total && !r.errores.length ? '<p class="muted">No hay nada que cambiar: las fichas ya tienen estos datos.</p>' : ''}
+      <p class="muted small">Si el código ya existe, la ficha se <b>actualiza</b> con las columnas que vengan rellenas (las vacías no borran nada; ausencias, promociones y demás se conservan). Si no existe, se crea. Columnas: ${MotorEmpleados.COLUMNAS.join(', ')}. Separador ; o , · fechas dd/mm/aaaa.</p></div>
+      <div class="dlg-f"><button class="btn ghost" id="iCancel">Cancelar</button><button class="btn" id="iOk" ${total ? '' : 'disabled'}>${r.actualizaciones.length && r.empleados.length ? `Importar ${r.empleados.length} y actualizar ${r.actualizaciones.length}` : r.actualizaciones.length ? `Actualizar ${r.actualizaciones.length}` : `Importar ${r.empleados.length}`}</button></div>`, { ancho: 760 });
     $('#iCancel', d).onclick = () => d.close('cancel');
-    $('#iOk', d).onclick = async () => { const n = await Empleados.importar(r.empleados); d.close('ok'); toast(`${n} empleados importados`); Ficus.decir(`${n} fichas nuevas, todas cifradas. Buen trabajo.`, 'yay'); render(main); };
+    $('#iOk', d).onclick = async () => {
+      if (r.actualizaciones.length) await Empleados.actualizarVarios(r.actualizaciones);
+      const n = r.empleados.length ? await Empleados.importar(r.empleados) : 0;
+      d.close('ok'); toast([n && `${n} empleados nuevos`, r.actualizaciones.length && `${r.actualizaciones.length} fichas actualizadas`].filter(Boolean).join(' · '));
+      Ficus.decir('Hecho. Todo sigue cifrado.', 'yay'); render(main);
+    };
   }
 
   function cambiarPw() {
