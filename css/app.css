@@ -739,3 +739,15 @@ main{min-width:0}
 .doc-acts .btn svg{width:16px;height:16px}
 .doc-link:empty{display:none}
 @media (max-width:760px){.doc-layout{grid-template-columns:1fr}.row3{grid-template-columns:1fr 1fr 1fr}.plantillas{grid-template-columns:1fr 1fr}}
+
+/* Casillas del alta: efecto burbuja al marcar */
+.paso .box{position:relative}
+.paso .box.pop{animation:burbuja 460ms cubic-bezier(.34,1.56,.64,1)}
+@keyframes burbuja{0%{transform:scale(1)}30%{transform:scale(1.35);border-radius:50%}55%{transform:scale(.88)}100%{transform:scale(1)}}
+.burst{position:absolute;inset:0;pointer-events:none}
+.burst .ring{position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--ae-completada);animation:anillo 520ms var(--ease-out) forwards}
+@keyframes anillo{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.4);opacity:0;border-width:.5px}}
+.burst .dot{position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px;border-radius:50%;background:var(--ae-completada);animation:gota 560ms var(--ease-out) forwards}
+.burst .dot:nth-child(odd){background:var(--accent);width:4px;height:4px;margin:-2px}
+@keyframes gota{0%{transform:rotate(var(--a)) translateY(0) scale(1);opacity:1}100%{transform:rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(.2);opacity:0}}
+@media (prefers-reduced-motion:reduce){.paso .box.pop{animation:none}.burst{display:none}}

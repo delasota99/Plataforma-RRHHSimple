@@ -134,15 +134,42 @@ const ModAltas = (() => {
     enlazarDetalle(main, a);
   }
 
+  /* Marcar un paso sin repintar la pantalla: se actualiza solo lo que cambia (sin parpadeo). */
+  function actualizar(main, a, b, on) {
+    b.classList.toggle('on', on); b.setAttribute('aria-checked', on);
+    if (on) burbuja(b);
+    const e = MotorAltas.estado(a), p = MotorAltas.progreso(a), dOf = MotorAltas.diasDesdeOferta(a, hoyISO()), t = Altas.tareaDe(a.id);
+    $('.prog-n', main).innerHTML = `<b>${Math.round(p.pct * 100)} %</b><span>${p.hechos} de ${p.total} pasos</span>`;
+    $('.prog-card .ac-bar i', main).style.transform = `scaleX(${p.pct})`;
+    $('.prog-card .ac-m', main).innerHTML = `${dOf !== null ? `<span>Oferta enviada hace ${dOf} día${dOf === 1 ? '' : 's'}</span>` : '<span>Oferta sin enviar</span>'}${a.fechaIncorporacion ? `<span>Incorporación ${Fecha.larga(Fecha.parse(a.fechaIncorporacion))} (${relativo(a.fechaIncorporacion)})</span>` : ''}${t && t.estado !== 'terminado' ? `<span>Tarea automática: ${esc(t.titulo.split(': ')[1] || '')}</span>` : ''}`;
+    $$('.fase', main).forEach(sec => { const bs = $$('.paso', sec), h = bs.filter(x => x.classList.contains('on')).length, ex = $('.fase-h .ex', sec); ex.textContent = `${h}/${bs.length}`; ex.classList.toggle('ok', h === bs.length); });
+    const ch = $('.alta-top .achip', main); if (ch) { ch.className = `achip ae-${e}`; ch.textContent = ESTADO[e]; }
+    const dOfIn = $('#dOf', main); if (dOfIn && a.fechaOferta && dOfIn.value !== a.fechaOferta) dOfIn.value = a.fechaOferta;
+    const c = $('#cerrar', main);
+    if (c) { c.classList.toggle('ghost', e !== 'completada'); const nota = c.nextElementSibling?.matches('p') ? c.nextElementSibling : null;
+      if (e === 'completada') nota?.remove();
+      else if (nota) nota.textContent = `Faltan ${p.total - p.hechos} pasos; puedes cerrarla igualmente.`;
+      else c.insertAdjacentHTML('afterend', `<p class="muted small" style="margin:6px 0 0">Faltan ${p.total - p.hechos} pasos; puedes cerrarla igualmente.</p>`); }
+  }
+  /* Efecto burbuja: la casilla se infla, estalla y suelta unas gotas. */
+  function burbuja(b) {
+    if (reduceMotion) return;
+    const box = $('.box', b);
+    box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop');
+    const w = document.createElement('span'); w.className = 'burst'; w.setAttribute('aria-hidden', 'true');
+    w.innerHTML = '<i class="ring"></i>' + Array.from({ length: 8 }, (_, i) => `<i class="dot" style="--a:${i * 45 + (Math.random() * 16 - 8)}deg;--d:${18 + Math.random() * 8}px"></i>`).join('');
+    box.append(w); setTimeout(() => { w.remove(); box.classList.remove('pop'); }, 700);
+  }
+
   function enlazarDetalle(main, a) {
     $('#volver').onclick = () => { abierta = null; lista(main); scrollTo(0, 0); };
     $$('.paso', main).forEach(b => b.onclick = () => {
       if (!b.isConnected) return;
-      const on = !b.classList.contains('on'), y = scrollY;
+      const on = !b.classList.contains('on');
       const nueva = Altas.marcar(a.id, b.dataset.paso, on); Shell.pintarNav();
       if (on && MotorAltas.estado(nueva) === 'completada') Ficus.decir('¡Alta completa! Ya puedes cerrarla y crear su ficha.', 'yay');
       else if (on && b.dataset.paso === 'ofertaEnviada') toast('Fecha de oferta guardada: hoy');
-      detalle(main); scrollTo(0, y); $(`[data-paso="${b.dataset.paso}"]`, main)?.focus();
+      actualizar(main, nueva, b, on);
     });
     $$('[data-campo]', main).forEach(inp => inp.onchange = () => {
       let v = inp.value.trim();
