@@ -92,7 +92,7 @@ const ModAusencias = (() => {
     const tipoSel = () => Ausencias.tipo(a.tipo);
     const d = abrirModal(`<form id="ausF" novalidate><div class="dlg-b">
       <h2 style="font-size:20px;font-weight:600;margin:0 0 14px">${editando ? 'Ausencia' : 'Nueva ausencia'}</h2>
-      <div class="field"><label for="aEmp">Persona</label><select id="aEmp">${lista.map(e => `<option value="${e.id}" ${a.empleadoId === e.id ? 'selected' : ''}>${esc(e.nombreCompleto)} · ${esc(e.codigo)}</option>`).join('')}</select></div>
+      ${SelPersona.campo('aEmp', 'Persona', { valor: a.empleadoId, ids: lista.map(e => e.id) })}
       <div class="row2"><div class="field"><label for="aTipo">Tipo</label><select id="aTipo">${C.tipos.map(t => `<option value="${t.id}" ${a.tipo === t.id ? 'selected' : ''}>${esc(t.nombre)}</option>`).join('')}</select></div>
         <div class="field" id="aSubBox"></div></div>
       <div class="row2"><div class="field"><label for="aDesde">Primer día</label><input type="date" id="aDesde" value="${a.desde}"></div>
@@ -106,6 +106,7 @@ const ModAusencias = (() => {
     </div>
     <div class="dlg-f">${editando ? '<button type="button" class="btn ghost danger" id="aDel" style="margin-right:auto">Eliminar</button>' : ''}<button type="button" class="btn ghost" id="aCancel">Cancelar</button><button class="btn">${editando ? 'Guardar' : 'Crear ausencia'}</button></div></form>`, { ancho: 620 });
 
+    SelPersona.enlazar(d);
     function pintarTipo() {
       const t = tipoSel();
       $('#aSubBox', d).innerHTML = t.subtipos ? `<label for="aSub">Detalle</label><select id="aSub"><option value="">—</option>${t.subtipos.map(s => `<option ${a.subtipo === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>` : '';
@@ -132,6 +133,7 @@ const ModAusencias = (() => {
       ev.preventDefault();
       const datos = { id: a.id, empleadoId: Number($('#aEmp', d).value), tipo: a.tipo, subtipo: $('#aSub', d)?.value || '', desde: $('#aDesde', d).value, hastaPrevista: $('#aHasta', d).value,
         finReal: $('#aFin', d)?.value || '', porcentaje: tipoSel().conPorcentaje ? (Calc.num($('#aPct', d).value) ?? '') : '', nota: $('#aNota', d).value.trim(), acciones: a.acciones || {} };
+      if (!datos.empleadoId) { $('#aErr', d).textContent = 'Elige a la persona.'; $('#aEmp-q', d).focus(); return; }
       const err = MotorAusencias.validar(datos); if (err.length) { $('#aErr', d).textContent = err.join(' · '); return; }
       const { empleadoId, ...resto } = datos;
       await Ausencias.guardar(empleadoId, { ...resto, _antes: editando ? a0.empleadoId : null });

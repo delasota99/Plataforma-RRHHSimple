@@ -125,11 +125,12 @@ const ModVacaciones = (() => {
     if (!Empleados.desbloqueado) { caja.innerHTML = `<div class="note">${icon('info')}<div>Para elegir a una persona, <a href="#empleados">desbloquea la base de empleados</a>.</div></div>`; return; }
     const lista = MotorEmpleados.filtrar(Empleados.todos(), { estado: 'todos', hoy: Fecha.iso(Fecha.hoy()) });
     if (!lista.length) return;
-    let modo = pendienteEmp ? 'emp' : 'man', empId = pendienteEmp || lista[0].id; pendienteEmp = null;
+    let modo = pendienteEmp ? 'emp' : 'man', empId = pendienteEmp || (SelPersona.candidatas()[0] || lista[0]).id; pendienteEmp = null;
     caja.innerHTML = `<span class="flabel">Calcular para</span>
       <div class="seg" id="modeSeg"><span class="thumb"></span><button type="button" data-m="emp">Empleado</button><button type="button" data-m="man">Manual</button></div>
-      <div class="field" id="empField" style="margin-top:12px"><label for="v-emp" class="sr">Empleado</label><select id="v-emp">${lista.map(e => `<option value="${e.id}">${esc(e.nombreCompleto)} · ${esc(e.codigo)}${e.fechaBaja ? ' (baja)' : ''}</option>`).join('')}</select>
+      <div id="empField" style="margin-top:12px">${SelPersona.campo('v-emp', 'Persona', { valor: empId })}
         <div class="emp-card" id="empCard"></div><button type="button" class="linkbtn" id="guardarCons" style="margin-top:8px">Guardar los días consumidos en su ficha</button></div>`;
+    SelPersona.enlazar(caja);
     const seg = $('#modeSeg'), sel = $('#v-emp');
     const pintarModo = () => { $$('button', seg).forEach(b => b.setAttribute('aria-pressed', b.dataset.m === modo)); seg.querySelector('.thumb').style.transform = modo === 'man' ? 'translateX(100%)' : 'none'; $('#empField').hidden = modo === 'man'; };
     const rellenar = () => {
@@ -140,7 +141,6 @@ const ModVacaciones = (() => {
       $('#empCard').innerHTML = `<span class="avatar">${esc(((e.nombre[0] || '') + (e.apellido1[0] || '')).toUpperCase())}</span><span>${esc(e.departamento || '—')} · ${esc(e.centro || '—')}<span class="meta">Contratación ${e.fechaContratacion ? Fecha.larga(Fecha.parse(e.fechaContratacion)) : '—'}${e.fechaBaja ? ' · baja ' + Fecha.larga(Fecha.parse(e.fechaBaja)) : ''}</span></span>`;
       update();
     };
-    sel.value = String(empId);
     seg.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; modo = b.dataset.m; pintarModo(); if (modo === 'emp') rellenar(); };
     sel.onchange = rellenar;
     $('#v-anio').addEventListener('change', () => { if (modo === 'emp') rellenar(); });

@@ -16,6 +16,7 @@ const ModPermisos = (() => {
         <p class="muted" style="margin:0 0 14px">Cuidado directo de un menor de ${P.reduccionJornada.edadMenor} años, de una persona con discapacidad sin actividad retribuida o de un familiar hasta 2.º grado que no pueda valerse por sí mismo. Entre 1/8 y la mitad de la jornada, con reducción proporcional del salario.</p>
         <div class="red-grid">
           <form class="form" id="rF" autocomplete="off" onsubmit="return false">
+            <div id="rEmp"></div>
             <div class="row2"><div class="field"><label for="rH">Jornada actual (h/semana)</label><input id="rH" inputmode="decimal" value="${red.horasSemana}"></div>
               <div class="field"><label for="rS">Salario bruto anual (€)</label><input id="rS" inputmode="decimal" value="${esc(red.salarioAnual)}" placeholder="Opcional"></div></div>
             <div class="field"><label for="rF2">Reducción: <b id="rFv"></b></label><input type="range" id="rF2" min="12.5" max="50" step="0.5" value="${red.fraccion * 100}">
@@ -32,6 +33,7 @@ const ModPermisos = (() => {
     });
     $('#rF').addEventListener('input', reduccion);
     $$('[data-fr]').forEach(b => b.onclick = () => { $('#rF2').value = Number(b.dataset.fr) * 100; reduccion(); });
+    Calc.empleado($('#rEmp'), e => { if (!e) return; $('#rS').value = e.salario ? String(e.salario).replace('.', ',') : ''; reduccion(); });
     pintar(); reduccion();
   }
 

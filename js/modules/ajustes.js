@@ -1,6 +1,7 @@
 /* Ajustes: apariencia, copias de seguridad, panel, asistente y parámetros legales. */
 const ModAjustes = (() => {
   const P = window.RRHH_PARAMS;
+  const ICONOS_CAT = [['altas', 'Alta'], ['pruebas', 'Reloj de arena'], ['promociones', 'Subida'], ['ausencias', 'Ausencia'], ['nominas', 'Recibo'], ['salidas', 'Salida'], ['gestoria', 'Edificio'], ['prl', 'Escudo'], ['legal', 'Balanza'], ['formacion', 'Formación'], ['documentos', 'Correo'], ['calendario', 'Calendario'], ['empleados', 'Personas'], ['reclutamiento', 'Lupa'], ['otras', 'Puntos']];
 
   function render(main) {
     const e = Datos.estado, f = Ficus.estado, tema = Shell.tema();
@@ -17,6 +18,19 @@ const ModAjustes = (() => {
         <div class="set-row"><div><b>Panel de inicio</b><span>Vuelve a los bloques de partida.</span></div><button class="btn ghost sm" id="resetPanel">Restablecer panel</button></div>
         <div class="set-row"><div><b>Ficus</b><span>${f.mute ? 'Silenciado: solo habla si lo pulsas.' : 'Activo: saluda y da consejos.'}${f.mini ? ' Minimizado.' : ''}</span></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" id="fMuteSet">${f.mute ? 'Activar avisos' : 'Silenciar'}</button><button class="btn ghost sm" id="fMiniSet">${f.mini ? 'Mostrar' : 'Minimizar'}</button></div></div>
+      </section>
+
+      <section class="card set" id="catSet">
+        <h2>Categorías de tickets</h2>
+        <p class="muted">Cada tarea o recordatorio lleva una categoría. Cambia el nombre, el color o el icono; las que quites pasan a «Otras tareas».</p>
+        <ul class="cat-ed">${Tareas.categorias().map((c, i) => { const n = Tareas.todas().filter(t => t.categoria === c.id).length; return `<li data-i="${i}" style="--cc:${c.color}">
+          <span class="cat-sw">${icon(c.icono)}</span>
+          <label class="sr" for="cN${i}">Nombre</label><input id="cN${i}" data-k="nombre" value="${esc(c.nombre)}" maxlength="30" ${c.id === 'otras' ? '' : ''}>
+          <label class="sr" for="cI${i}">Icono</label><select id="cI${i}" data-k="icono">${ICONOS_CAT.map(([k, l]) => `<option value="${k}" ${c.icono === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+          <label class="sr" for="cC${i}">Color</label><input type="color" id="cC${i}" data-k="color" value="${c.color}">
+          <span class="muted small cat-n">${n} ticket${n === 1 ? '' : 's'}</span>
+          ${c.id === 'otras' ? '<span class="cat-fija muted small">fija</span>' : `<button class="icon-act" data-del-cat="${i}" aria-label="Quitar ${esc(c.nombre)}" title="Quitar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`}</li>`; }).join('')}</ul>
+        <div class="set-actions"><button class="btn ghost sm" id="addCat">+ Añadir categoría</button><button class="linkbtn" id="resetCat">Volver a las categorías de partida</button></div>
       </section>
 
       <section class="card set">
@@ -46,6 +60,7 @@ const ModAjustes = (() => {
           <dt>Jornada</dt><dd>${P.jornada.horasAnuales.toLocaleString('es-ES')} h/año · <span class="muted">${P.jornada.fuente}</span></dd>
           <dt>Pagas extra</dt><dd>${P.pagasExtra.numero} de ${P.pagasExtra.diasCadaUna} días · ${P.pagasExtra.prorrateadas} prorrateadas · ${P.pagasExtra.noProrrateadas.map(p => p.nombre.toLowerCase()).join(' y ')} · <span class="muted">${P.pagasExtra.fuente}</span></dd>
           <dt>Tablas salariales</dt><dd>${P.tablas.anio} · <span class="muted">${esc(P.tablas.fuente)}</span><br><span class="muted">${esc(P.tablas.nota)}</span></dd>
+          <dt>Dietas y quebranto</dt><dd>Comida ${euros(P.tablas.dietas.comida)} · cena ${euros(P.tablas.dietas.cena)} · alojamiento ${euros(P.tablas.dietas.alojamiento)} · desayuno ${euros(P.tablas.dietas.desayuno)} · quebranto de moneda ${euros(P.tablas.quebrantoMoneda.importe)} · prima de asistencia ${euros(P.tablas.primaAsistenciaDia)}/día<br><span class="muted">Convenio, arts. 23, 42 y 43 · importes provisionales ${P.tablas.anio}</span></dd>
           <dt>Festivos</dt><dd>${Object.entries(P.festivos).map(([y, a]) => `${y}: ${a.nacionales.length} nacionales · <span class="muted">${esc(a.fuente)}</span>`).join('<br>')}</dd>
         </dl>
         <details class="legal" style="margin-top:14px"><summary>Tabla salarial ${P.tablas.anio} (${cats.length} categorías)<svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary>
@@ -60,6 +75,20 @@ const ModAjustes = (() => {
       </section>
       </div></div>`;
 
+    // Categorías de tickets
+    const cats0 = () => Tareas.categorias().map(c => ({ ...c }));
+    $$('.cat-ed [data-k]', main).forEach(el => el.onchange = () => {
+      const i = Number(el.closest('li').dataset.i), l = cats0(), v = el.value.trim();
+      if (el.dataset.k === 'nombre' && !v) { el.value = l[i].nombre; return; }
+      l[i][el.dataset.k] = v; Tareas.setCategorias(l); render(main); toast('Categoría guardada');
+    });
+    $$('[data-del-cat]', main).forEach(b => b.onclick = () => {
+      const i = Number(b.dataset.delCat), l = cats0(), [q] = l.splice(i, 1), afect = Tareas.todas().filter(t => t.categoria === q.id);
+      Tareas.setCategorias(l); afect.forEach(t => Tareas.editar(t.id, { categoria: 'otras' }, `Categoría: Otras tareas (se quitó «${q.nombre}»)`));
+      render(main); toast(`«${q.nombre}» quitada${afect.length ? `: ${afect.length} ticket${afect.length === 1 ? '' : 's'} a «Otras tareas»` : ''}`);
+    });
+    $('#addCat').onclick = () => { const l = cats0(), j = l.findIndex(c => c.id === 'otras'); l.splice(j < 0 ? l.length : j, 0, { id: 'c' + Date.now().toString(36), nombre: 'Nueva categoría', color: '#4a6f99', icono: 'documentos' }); Tareas.setCategorias(l); render(main); const ins = $$('.cat-ed input[data-k=nombre]', main); const x = ins[j < 0 ? ins.length - 1 : j]; x?.focus(); x?.select(); };
+    $('#resetCat').onclick = () => { const ids = new Set(P.tareas.categorias.map(c => c.id)); Tareas.setCategorias(P.tareas.categorias); Tareas.todas().filter(t => !ids.has(t.categoria)).forEach(t => Tareas.editar(t.id, { categoria: 'otras' })); render(main); toast('Categorías de partida restauradas'); };
     $$('[data-tema]', main).forEach(b => b.onclick = () => { Shell.setTema(b.dataset.tema); render(main); });
     $('#resetPanel').onclick = () => { ModInicio.reset(); toast('Panel restablecido'); };
     $('#fMuteSet').onclick = () => { Ficus.silenciar(!Ficus.estado.mute, true); render(main); };

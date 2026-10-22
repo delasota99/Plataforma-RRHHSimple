@@ -6,13 +6,13 @@ const Calc = (() => {
   const hoyISO = () => Fecha.iso(Fecha.hoy());
   const f = s => s ? Fecha.larga(Fecha.parse(s)) : '—';
 
-  /* Desplegable "Rellenar con un empleado". alElegir(empleado | null). Solo con la base de empleados abierta. */
+  /* Buscador "Rellenar con los datos de una persona". alElegir(empleado | null). Solo con la base de empleados abierta. */
   function empleado(caja, alElegir) {
     if (!caja || typeof Empleados === 'undefined' || !Empleados.configurado()) return;
     if (!Empleados.desbloqueado) { caja.innerHTML = `<div class="note">${icon('info')}<div>Para rellenar con los datos de una persona, <a href="#empleados">desbloquea la base de empleados</a>.</div></div>`; return; }
-    const lista = MotorEmpleados.filtrar(Empleados.todos(), { estado: 'todos', hoy: hoyISO() });
-    if (!lista.length) return;
-    caja.innerHTML = `<div class="field"><label for="cEmp">Rellenar con un empleado</label><select id="cEmp"><option value="">— Datos a mano —</option>${lista.map(e => `<option value="${e.id}">${esc(e.nombreCompleto)} · ${esc(e.codigo)}${e.fechaBaja ? ' (baja)' : ''}</option>`).join('')}</select></div>`;
+    if (!Empleados.todos().length) return;
+    caja.innerHTML = SelPersona.campo('cEmp', 'Rellenar con los datos de una persona', { vacio: true, placeholder: 'Código, nombre, apellidos o departamento… (o datos a mano)' });
+    SelPersona.enlazar(caja);
     $('#cEmp', caja).onchange = ev => alElegir(ev.target.value ? Empleados.buscar(Number(ev.target.value)) : null);
   }
 

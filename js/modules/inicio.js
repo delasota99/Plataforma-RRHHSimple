@@ -3,21 +3,22 @@ const ModInicio = (() => {
   const P = window.RRHH_PARAMS;
   const BLOQUES = {
     saludo:     { nombre: 'Saludo', desc: 'La fecha y tu resumen del día', span: 12 },
-    atencion:   { nombre: 'Requiere tu atención', desc: 'Todo lo que está pendiente de ti, en un solo sitio', span: 7 },
-    calendario: { nombre: 'Calendario del mes', desc: 'Festivos, tareas y ausencias en formato mensual', span: 5 },
-    semana:     { nombre: 'Tareas de esta semana', desc: 'De lunes a domingo, con hoy resaltado', span: 6 },
-    pendientes: { nombre: 'Tareas pendientes', desc: 'Vencidas primero, luego las siguientes y los recordatorios', span: 6 },
+    tickets:    { nombre: 'Tickets', desc: 'Tus tareas de la semana o del mes, con lo vencido y lo fijado, y los avisos', span: 7 },
+    calendario: { nombre: 'Calendario', desc: 'Semana o mes (va con el selector de Tickets): festivos, recordatorios y fin de ausencias', span: 5 },
+    recordatorios: { nombre: 'Recordatorios', desc: 'Los próximos recordatorios en una sola línea', span: 12 },
     ausencias:  { nombre: 'Ausencias', desc: 'Quién falta hoy y quién vuelve pronto', span: 4 },
     procesos:   { nombre: 'Procesos en curso', desc: 'Vacantes, altas, periodos de prueba y salidas', span: 4 },
     plantilla:  { nombre: 'Plantilla de un vistazo', desc: 'Mujeres y hombres, incorporaciones y bajas del año', span: 4 },
+    webs:       { nombre: 'Herramientas web', desc: 'netTime One, Remote, Vitaly, Claude… en una línea', span: 12 },
     altas:      { nombre: 'Altas en curso', desc: 'Estado de cada incorporación', span: 12 },
     festivos:   { nombre: 'Próximos festivos', desc: 'Los siguientes festivos de tus capas', span: 5 },
     anio:       { nombre: 'El año en vacaciones', desc: 'Cuánto del año ha pasado y días generados', span: 4 },
     copia:      { nombre: 'Copia de seguridad', desc: 'Cuándo se guardó la última copia', span: 4 },
-    accesos:    { nombre: 'Herramientas', desc: 'Accesos directos a todas las herramientas', span: 12 }
+    accesos:    { nombre: 'Accesos rápidos', desc: 'Atajos a todas las páginas de la plataforma', span: 12 }
   };
-  const POR_DEFECTO = ['saludo', 'atencion', 'calendario', 'semana', 'pendientes', 'ausencias', 'procesos', 'plantilla'];
-  let editando = false, calVista = null;
+  const POR_DEFECTO = ['saludo', 'tickets', 'calendario', 'recordatorios', 'ausencias', 'procesos', 'plantilla'];
+  let editando = false, calVista = null, semOff = 0;
+  const rango = () => Datos.get('_panelRango', 'semana');
   const hoyISO = () => Fecha.iso(Fecha.hoy());
   const base = () => Empleados.configurado() && Empleados.desbloqueado;
   const layout = () => {
@@ -31,6 +32,15 @@ const ModInicio = (() => {
       if (!l.includes('calendario')) l.splice(l.indexOf('atencion') + 1, 0, 'calendario');
       Datos.set('_panel2', true); Datos.set('panel', l);
     }
+    // Tickets (oct. 2026): "Requiere tu atención" pasa a "Tickets"; "Esta semana" y "Pendientes" se integran; se añaden los recordatorios.
+    if (!Datos.get('_panel3')) {
+      l = [...l]; const ia = l.indexOf('atencion');
+      if (ia >= 0) l.splice(ia, 1, 'tickets'); else if (!l.includes('tickets')) l.splice(l.includes('saludo') ? l.indexOf('saludo') + 1 : 0, 0, 'tickets');
+      l = l.filter(k => k !== 'semana' && k !== 'pendientes');
+      if (!l.includes('calendario')) l.splice(l.indexOf('tickets') + 1, 0, 'calendario');
+      if (!l.includes('recordatorios')) l.splice(Math.max(l.indexOf('tickets'), l.indexOf('calendario')) + 1, 0, 'recordatorios');
+      Datos.set('_panel3', true); Datos.set('panel', l);
+    }
     return l.filter(k => k in BLOQUES);
   };
   const setLayout = l => Datos.set('panel', l);
@@ -38,17 +48,18 @@ const ModInicio = (() => {
   const span = k => anchos()[k] ? 12 : BLOQUES[k].span;
   const bloqueado = txt => `<div class="mini-lock">${icon('empleados')}<span>${txt}</span><button class="btn ghost sm" data-unlock>Desbloquear</button></div>`;
 
-  /* Semana actual de lunes a domingo. */
-  function semana() {
-    const h = Fecha.hoy(), dow = (new Date(h).getUTCDay() + 6) % 7, L = h - dow * DAY;
+  /* Semana de lunes a domingo (desplazada n semanas). */
+  function semana(n = 0) {
+    const h = Fecha.hoy() + n * 7 * DAY, dow = (new Date(h).getUTCDay() + 6) % 7, L = h - dow * DAY;
     return { L: Fecha.iso(L), D: Fecha.iso(L + 6 * DAY), dias: Array.from({ length: 7 }, (_, i) => Fecha.iso(L + i * DAY)) };
   }
-  const activas = () => Tareas.todas().filter(t => !t.hecha);
+  const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const segRango = () => `<div class="seg3 mini-seg" role="group" aria-label="Periodo"><button data-rango="semana" aria-pressed="${rango() === 'semana'}">Semana</button><button data-rango="mes" aria-pressed="${rango() === 'mes'}">Mes</button></div>`;
 
   /* ---------- Bloques ---------- */
   function bSaludo() {
-    const now = new Date(), h = now.getHours(), s = semana(), l = activas(), f = ModCalendario.proximos(1)[0];
-    const sem = l.filter(t => t.fecha && t.fecha >= s.L && t.fecha <= s.D).length, venc = l.filter(t => t.fecha && t.fecha < hoyISO()).length;
+    const now = new Date(), h = now.getHours(), l = Tareas.vista('semana').filter(t => !t.hecha && t.tipo !== 'recordatorio'), f = ModCalendario.proximos(1)[0];
+    const venc = l.filter(t => MotorTareas.vencido(t, hoyISO())).length;
     const aus = base() ? MotorAusencias.ausentesEn(Ausencias.todas(), hoyISO(), P.ausencias.tipos, hoyISO()).length : null;
     return `<div class="hello">
       <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
@@ -57,75 +68,89 @@ const ModInicio = (() => {
         <h1>${h < 14 ? 'Buenos días' : h < 21 ? 'Buenas tardes' : 'Buenas noches'}, <span>Fer</span></h1>
       </div>
       <div class="sum">
-        <a class="pillstat" href="#tareas"><b>${sem}</b><span>tareas<br>esta semana</span></a>
-        <a class="pillstat${venc ? ' alerta' : ''}" href="#tareas"><b>${venc}</b><span>tareas<br>vencidas</span></a>
+        <a class="pillstat" href="#tareas" data-ir-vista="semana"><b>${l.length}</b><span>tareas<br>esta semana</span></a>
+        <a class="pillstat${venc ? ' alerta' : ''}" href="#tareas" data-ir-vista="semana"><b>${venc}</b><span>tareas<br>vencidas</span></a>
         ${aus !== null ? `<a class="pillstat" href="#ausencias"><b>${aus}</b><span>ausentes<br>hoy</span></a>` : ''}
         <a class="pillstat" href="#calendario"><b>${f ? Fecha.corta(Fecha.parse(f.fecha)) : '—'}</b><span>próximo<br>festivo</span></a>
       </div></div>`;
   }
 
-  function bAtencion() {
-    const h = hoyISO(), n = Shell.avisos(), items = [];
-    const add = (cond, ico, texto, href, accion = '') => { if (cond) items.push(`<li><a href="${href}" ${accion}><span class="at-ico">${icon(ico)}</span><span>${texto}</span><svg class="i at-go" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></a></li>`); };
-    add(n.tareas, 'tareas', `<b>${n.tareas}</b> tarea${n.tareas === 1 ? '' : 's'} vencida${n.tareas === 1 ? '' : 's'}`, '#tareas');
-    add(n.altas, 'altas', `<b>${n.altas}</b> alta${n.altas === 1 ? '' : 's'} bloqueada${n.altas === 1 ? '' : 's'}`, '#altas');
+  /* Avisos que no son tickets (altas bloqueadas, fichas sin sexo, copia): una línea de chips. */
+  function avisosSueltos() {
+    const n = Shell.avisos(), it = [];
+    const add = (c, ico, txt, href, extra = '') => { if (c) it.push(`<a class="at-chip" href="${href}" ${extra}>${icon(ico)}${txt}</a>`); };
+    add(n.altas, 'altas', `${n.altas} alta${n.altas === 1 ? '' : 's'} bloqueada${n.altas === 1 ? '' : 's'}`, '#altas');
     if (base()) {
-      add(n.ausencias, 'ausencias', `<b>${n.ausencias}</b> vuelta${n.ausencias === 1 ? '' : 's'} de ausencia sin confirmar`, '#ausencias');
-      add(n.pruebas, 'pruebas', `<b>${n.pruebas}</b> periodo${n.pruebas === 1 ? '' : 's'} de prueba terminado${n.pruebas === 1 ? '' : 's'} sin resolver`, '#pruebas');
-      const pronto = Procesos.Pruebas.todas().filter(p => !p.resultado && p.fin >= h && MotorProcesos.diasEntre(h, p.fin) <= 7).length;
-      add(pronto, 'pruebas', `<b>${pronto}</b> periodo${pronto === 1 ? '' : 's'} de prueba termina${pronto === 1 ? '' : 'n'} en 7 días`, '#pruebas');
-      add(n.salidas, 'salidas', `<b>${n.salidas}</b> salida${n.salidas === 1 ? '' : 's'} con pasos atrasados`, '#salidas');
+      add(n.ausencias, 'ausencias', `${n.ausencias} vuelta${n.ausencias === 1 ? '' : 's'} sin confirmar`, '#ausencias');
+      add(n.pruebas, 'pruebas', `${n.pruebas} prueba${n.pruebas === 1 ? '' : 's'} sin resolver`, '#pruebas');
+      add(n.salidas, 'salidas', `${n.salidas} salida${n.salidas === 1 ? '' : 's'} con retraso`, '#salidas');
       const sinSexo = Empleados.todos().filter(e => !e.sexo).length;
-      add(sinSexo, 'empleados', `<b>${sinSexo}</b> ficha${sinSexo === 1 ? '' : 's'} sin sexo (informes de igualdad)`, '#empleados');
+      add(sinSexo, 'empleados', `${sinSexo} ficha${sinSexo === 1 ? '' : 's'} sin sexo`, '#empleados');
     }
     const d = Datos.estado.ultimaCopia ? Math.floor((Date.now() - Datos.estado.ultimaCopia) / DAY) : null;
-    add(d === null || d >= 7, 'ajustes', d === null ? 'Aún no hay ninguna <b>copia de seguridad</b>' : `Última copia hace <b>${d} días</b>`, '#inicio', 'data-save');
-    return `<div class="card"><div class="card-h"><h3>Requiere tu atención</h3>${items.length ? `<span class="ex">${items.length}</span>` : ''}</div>
-      ${items.length ? `<ul class="at-list">${items.join('')}</ul>` : `<div class="at-ok"><span>✓</span><p><b>Todo al día.</b> No hay nada pendiente de ti ahora mismo.</p></div>`}
-      ${!base() && Empleados.configurado() ? `<p class="muted small" style="margin:10px 0 0">Desbloquea Empleados para ver también ausencias y procesos. <button class="linkbtn" data-unlock>Desbloquear</button></p>` : ''}</div>`;
+    add(d === null || d >= 7, 'ajustes', d === null ? 'Sin copia de seguridad' : `Copia de hace ${d} días`, '#inicio', 'data-save');
+    return it.length ? `<div class="at-chips">${it.join('')}</div>` : '';
+  }
+  function filaTk(t) {
+    const h = hoyISO(), venc = MotorTareas.vencido(t, h), hecha = t.estado === 'terminado';
+    return `<li class="tk-row mini p-${t.prioridad}${hecha ? ' done' : ''}" data-tk="${t.id}">
+      <button class="tk-st st-${t.estado}" data-st aria-label="Estado: ${Tareas.estadoTxt(t)}. Pulsa para avanzar" title="${Tareas.estadoTxt(t)} · pulsa para avanzar"><i></i></button>
+      <button class="tk-main" data-open><span class="tk-key">${MotorTareas.clave(t.clave)}</span>${Tareas.chipCat(t.categoria, true)}<b class="tk-tt">${esc(t.titulo)}</b></button>
+      <span class="tk-side">${t.fijada ? `<span class="tk-pinned" title="Fijada">${icon('pin')}</span>` : ''}<i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i><span class="tk-f${venc ? ' late-txt' : ''}${t.fecha === h && !hecha ? ' hoy' : ''}">${Tareas.cuando(t.fecha)}</span></span></li>`;
+  }
+  function bTickets() {
+    const r = rango(), l = Tareas.vista(r).filter(t => t.tipo !== 'recordatorio'), pend = l.filter(t => !t.hecha), hechas = l.filter(t => t.hecha);
+    const MAX = 6, venc = pend.filter(t => MotorTareas.vencido(t, hoyISO())).length;
+    return `<div class="card tkb"><div class="card-h"><h3>Tickets</h3>${segRango()}<span class="grow"></span>${pend.length ? `<span class="ex${venc ? ' bad' : ''}">${pend.length}${venc ? ` · ${venc} vencida${venc === 1 ? '' : 's'}` : ''}</span>` : ''}</div>
+      ${avisosSueltos()}
+      ${pend.length ? `<ul class="tk-list">${pend.slice(0, MAX).map(filaTk).join('')}</ul>` : `<div class="at-ok"><span>✓</span><p><b>${r === 'semana' ? 'Semana despejada.' : 'Mes despejado.'}</b> No hay tareas pendientes ${r === 'semana' ? 'esta semana' : 'este mes'}.</p></div>`}
+      <div class="tkb-f">${pend.length > MAX ? `<a href="#tareas" data-ir-vista="${r}">Ver ${pend.length - MAX} más</a>` : `<a href="#tareas" data-ir-vista="${r}">Ver en Tareas</a>`}
+        ${hechas.length ? `<span class="muted small">✓ ${hechas.length} hecha${hechas.length === 1 ? '' : 's'}</span>` : ''}<span class="grow"></span>
+        ${pend.length > 1 ? `<button class="linkbtn" data-foco>${icon('foco')}Una a una</button>` : ''}<button class="linkbtn" data-new-task>+ Nueva</button></div></div>`;
   }
 
-  function filaTarea(t, { conDia = true } = {}) {
-    const d = t.fecha ? Fecha.parse(t.fecha) : null, hoy = Fecha.hoy(), late = d !== null && d < hoy;
-    return `<li class="task p-${t.prioridad} est-${t.estado}${t.hecha ? ' done' : ''}" data-id="${t.id}">
-      <button class="st st-${t.estado} st-min" data-st aria-label="Estado: ${Tareas.ESTADO[t.estado]}. Pulsa para cambiarlo" title="${Tareas.ESTADO[t.estado]} · pulsa para avanzar"><i></i><span>${Tareas.ESTADO[t.estado]}</span></button>
-      <i class="prio ${t.prioridad}" title="Importancia ${t.prioridad}"></i>
-      <button class="tt tt-btn" data-edit>${esc(t.titulo)}<small class="${late ? 'late-txt' : ''}">${d === null ? 'Sin fecha' : d === hoy ? 'Hoy' : conDia ? Fecha.corta(d) : ''}${late ? ' · vencida' : ''}${t.repite ? ' · ' + Tareas.REPITE[t.repite].toLowerCase() : ''}</small></button></li>`;
-  }
-  function bSemana() {
-    const s = semana(), h = hoyISO(), l = activas().filter(t => t.fecha && t.fecha >= s.L && t.fecha <= s.D).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  function bCalendario() { return rango() === 'semana' ? calSemana() : calMes(); }
+  const navCal = (tipo, txt) => `<span class="mc-nav"><button class="icon-act" data-${tipo}="-1" aria-label="${txt} anterior"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><button class="icon-act" data-${tipo}="0" aria-label="${txt} actual" title="Hoy"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></button><button class="icon-act" data-${tipo}="1" aria-label="${txt} siguiente"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></span>`;
+  const ley = '<div class="mc-ley"><span><i class="f"></i>Festivo</span><span><i class="t"></i>Recordatorio o aviso</span><span><i class="a"></i>Fin de ausencia</span><a href="#calendario">Abrir calendario</a></div>';
+  function calSemana() {
+    const s = semana(semOff), h = hoyISO(), anios = [...new Set(s.dias.map(f => Number(f.slice(0, 4))))], D = anios.map(y => ModCalendario.datosDe(y));
+    const de = (k, f) => D.flatMap(x => x[k].get(f) || []);
     const DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-    return `<div class="card"><div class="card-h"><h3>Esta semana</h3><span class="muted small">${Fecha.corta(Fecha.parse(s.L))} – ${Fecha.corta(Fecha.parse(s.D))}</span></div>
-      <div class="wk">${s.dias.map((f, i) => { const n = l.filter(t => t.fecha === f).length; return `<button class="wk-d${f === h ? ' hoy' : ''}${f < h ? ' pasado' : ''}" data-dia="${f}" title="${Fecha.diaSemana(Fecha.parse(f))}"><small>${DIAS[i]}</small><b>${Number(f.slice(8))}</b>${n ? `<i>${n}</i>` : '<i class="vacio"></i>'}</button>`; }).join('')}</div>
-      ${l.length ? s.dias.filter(f => l.some(t => t.fecha === f)).map(f => `<div class="tgroup${f < h ? ' late' : ''}${f === h ? ' hoy-g' : ''}">${f === h ? 'Hoy' : Fecha.diaSemana(Fecha.parse(f))} · ${Fecha.corta(Fecha.parse(f))}</div><ul class="tasks">${l.filter(t => t.fecha === f).map(t => filaTarea(t, { conDia: false })).join('')}</ul>`).join('')
-        : '<p class="muted" style="margin:6px 0 0">Nada programado esta semana.</p>'}
-      <button class="linkbtn" data-new-task style="margin-top:10px">+ Nueva tarea</button></div>`;
+    return `<div class="card mc wk-cal"><div class="card-h"><h3>${Fecha.corta(Fecha.parse(s.L))} – ${Fecha.corta(Fecha.parse(s.D))}</h3>${segRango()}<span class="grow"></span>${navCal('wc', 'Semana')}</div>
+      <div class="wkc">${s.dias.map((f, i) => { const fs = de('fest', f), ts = de('tareas', f).filter(t => !t.hecha), as = de('aus', f);
+        return `<button class="wkc-d${i > 4 ? ' finde' : ''}${fs.length ? ' fest tag-' + fs[0].capa : ''}${f === h ? ' hoy' : ''}${f < h ? ' pasado' : ''}" data-ir="${f}" aria-label="${Fecha.diaSemana(Fecha.parse(f))} ${Number(f.slice(8))}${fs.length ? ': ' + esc(fs.map(x => x.nombre).join(', ')) : ''}${ts.length ? `, ${ts.length} recordatorio${ts.length > 1 ? 's' : ''}` : ''}${as.length ? `, fin de ${as.length} ausencia${as.length > 1 ? 's' : ''}` : ''}">
+          <small>${DIAS[i]}</small><b>${Number(f.slice(8))}</b>
+          <span class="wkc-ev">${fs.slice(0, 1).map(x => `<em class="f" title="${esc(x.nombre)}">${esc(x.nombre)}</em>`).join('')}${ts.slice(0, 2).map(t => `<em class="t" title="${esc(t.titulo)}">${esc(t.titulo)}</em>`).join('')}${ts.length > 2 ? `<em class="t">+${ts.length - 2}</em>` : ''}${as.length ? `<em class="a">${as.length > 1 ? `Fin ${as.length} aus.` : 'Fin: ' + esc(as[0].corto)}</em>` : ''}</span></button>`; }).join('')}</div>${ley}</div>`;
   }
-  function bPendientes() {
-    const s = semana(), h = hoyISO(), l = activas().filter(t => !t.fecha || t.fecha < s.L || t.fecha > s.D);
-    const venc = l.filter(t => t.fecha && t.fecha < h).sort((a, b) => a.fecha.localeCompare(b.fecha));
-    const prox = l.filter(t => t.fecha && t.fecha > s.D).sort((a, b) => a.fecha.localeCompare(b.fecha));
-    const sin = l.filter(t => !t.fecha);
-    const g = [['Vencidas', venc, 'late'], ['Más adelante', prox.slice(0, 5), ''], ['Recordatorios sin fecha', sin.slice(0, 4), '']].filter(x => x[1].length);
-    return `<div class="card"><div class="card-h"><h3>Tareas pendientes</h3><a href="#tareas">Ver todas (${l.length})</a></div>
-      ${g.length ? g.map(([n, li, c]) => `<div class="tgroup ${c}">${n}</div><ul class="tasks">${li.map(t => filaTarea(t)).join('')}</ul>`).join('') : '<p class="muted" style="margin:0">Fuera de esta semana no hay nada pendiente.</p>'}</div>`;
-  }
-
-  function bCalendario() {
+  function calMes() {
     const hoy = new Date(), v = calVista || { anio: hoy.getFullYear(), mes: hoy.getMonth() };
     const D = ModCalendario.datosDe(v.anio), h = hoyISO();
-    const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const n = new Date(Date.UTC(v.anio, v.mes + 1, 0)).getUTCDate(), off = (new Date(Date.UTC(v.anio, v.mes, 1)).getUTCDay() + 6) % 7;
     let celdas = '';
     for (let i = 0; i < off; i++) celdas += '<span class="mc-v"></span>';
     for (let d = 1; d <= n; d++) {
       const f = `${v.anio}-${String(v.mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, fs = D.fest.get(f) || [], ts = (D.tareas.get(f) || []).filter(t => !t.hecha), as = D.aus.get(f) || [], dow = (off + d - 1) % 7;
-      const tit = [...fs.map(x => x.nombre), ts.length ? `${ts.length} tarea${ts.length > 1 ? 's' : ''}` : '', as.length ? `Termina${as.length > 1 ? 'n' : ''} ${as.length} ausencia${as.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
+      const tit = [...fs.map(x => x.nombre), ...ts.map(t => t.titulo), as.length ? `Termina${as.length > 1 ? 'n' : ''} ${as.length} ausencia${as.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
       celdas += `<button class="mc-d${dow > 4 ? ' finde' : ''}${fs.length ? ' fest tag-' + fs[0].capa : ''}${f === h ? ' hoy' : ''}" data-ir="${f}" title="${esc(tit)}" aria-label="${d}${tit ? ': ' + esc(tit) : ''}"><span>${d}</span><em>${ts.length ? '<i class="t"></i>' : ''}${as.length ? '<i class="a"></i>' : ''}</em></button>`;
     }
-    return `<div class="card mc"><div class="card-h"><h3>${MESES[v.mes]} ${v.anio}</h3><span class="mc-nav"><button class="icon-act" data-mc="-1" aria-label="Mes anterior"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><button class="icon-act" data-mc="0" aria-label="Mes actual" title="Hoy"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></button><button class="icon-act" data-mc="1" aria-label="Mes siguiente"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></span></div>
-      <div class="mc-g">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((x, i) => `<span class="mc-h${i > 4 ? ' finde' : ''}">${x}</span>`).join('')}${celdas}</div>
-      <div class="mc-ley"><span><i class="f"></i>Festivo</span><span><i class="t"></i>Tareas</span><span><i class="a"></i>Fin de ausencia</span><a href="#calendario">Abrir calendario</a></div></div>`;
+    return `<div class="card mc"><div class="card-h"><h3>${MESES[v.mes]} ${v.anio}</h3>${segRango()}<span class="grow"></span>${navCal('mc', 'Mes')}</div>
+      <div class="mc-g">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((x, i) => `<span class="mc-h${i > 4 ? ' finde' : ''}">${x}</span>`).join('')}${celdas}</div>${ley}</div>`;
+  }
+
+  /* Recordatorios en una sola línea: los próximos (y los vencidos sin marcar), con "+N" si no caben. */
+  function bRecordatorios() {
+    const h = hoyISO(), l = Tareas.recordatorios(), MAX = 6;
+    const chip = t => { const d = Fecha.parse(t.fecha), venc = t.fecha < h, pronto = !venc && MotorTareas.avisando(t, h);
+      return `<button class="rc-chip${venc ? ' late' : pronto ? ' pronto' : ''}" data-rc="${t.id}" style="--cc:${Tareas.cat(t.categoria).color}" title="${esc(t.titulo)} · ${Fecha.larga(d)}${venc ? ' · vencido' : ''}"><span class="rc-d"><b>${new Date(d).getUTCDate()}</b><small>${Fecha.mesCorto(d)}</small></span><span class="rc-t">${esc(t.titulo)}</span></button>`; };
+    return `<div class="card rcb"><span class="rcb-h">${icon('campana')}<b>Recordatorios</b></span>
+      <div class="rc-row">${l.length ? l.slice(0, MAX).map(chip).join('') + (l.length > MAX ? `<a class="rc-more" href="#tareas" data-ir-vista="recordatorios">+${l.length - MAX}</a>` : '') : '<span class="muted small">No hay recordatorios pendientes.</span>'}</div>
+      <button class="icon-act" data-nuevo-rc aria-label="Nuevo recordatorio" title="Nuevo recordatorio"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>`;
+  }
+  function bWebs() {
+    const l = Herramientas.todas();
+    return `<div class="card rcb"><span class="rcb-h">${icon('herramientas')}<b>Herramientas</b></span>
+      <div class="rc-row">${l.map(x => `<a class="web-chip" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" style="--hc:${x.color}">${icon(x.icono || 'enlace')}${esc(x.nombre)}<span class="sr"> (pestaña nueva)</span></a>`).join('') || '<span class="muted small">Sin accesos.</span>'}</div>
+      <a class="icon-act" href="#herramientas" aria-label="Editar los accesos" title="Editar los accesos"><svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg></a></div>`;
   }
 
   function bAusencias() {
@@ -196,9 +221,9 @@ const ModInicio = (() => {
       <div class="meter"><i style="transform:scaleX(${d === null ? 1 : Math.min(1, d / 14)})"></i></div><button class="btn sm" data-save>Guardar copia ahora</button></div>`;
   }
   function bAccesos() {
-    return `<div class="card"><div class="card-h"><h3>Herramientas</h3></div>${Shell.SECCIONES.map(s => `<div class="tgroup">${esc(s.nombre)}</div><div class="tools">${s.items.map(([r, l], i) => `<a class="tool" href="#${r}" style="--i:${i}"><span class="ico">${icon(r, '')}</span><b>${esc(l)}</b></a>`).join('')}</div>`).join('')}</div>`;
+    return `<div class="card"><div class="card-h"><h3>Accesos rápidos</h3></div>${Shell.SECCIONES.map(s => `<div class="tgroup">${esc(s.nombre)}</div><div class="tools">${s.items.map(([r, l], i) => `<a class="tool" href="#${r}" style="--i:${i}"><span class="ico">${icon(r, '')}</span><b>${esc(l)}</b></a>`).join('')}</div>`).join('')}</div>`;
   }
-  const PINTAR = { saludo: bSaludo, atencion: bAtencion, calendario: bCalendario, semana: bSemana, pendientes: bPendientes, ausencias: bAusencias, procesos: bProcesos, plantilla: bPlantilla, altas: bAltas, festivos: bFestivos, anio: bAnio, copia: bCopia, accesos: bAccesos };
+  const PINTAR = { saludo: bSaludo, tickets: bTickets, calendario: bCalendario, recordatorios: bRecordatorios, webs: bWebs, ausencias: bAusencias, procesos: bProcesos, plantilla: bPlantilla, altas: bAltas, festivos: bFestivos, anio: bAnio, copia: bCopia, accesos: bAccesos };
 
   function render(main) {
     const L = layout(), ocultos = Object.keys(BLOQUES).filter(k => !L.includes(k));
@@ -224,13 +249,18 @@ const ModInicio = (() => {
     home.addEventListener('click', async e => {
       const add = e.target.closest('[data-add]'); if (add) { setLayout([...L, add.dataset.add]); render(main); return; }
       if (e.target.closest('[data-unlock]')) { if (await ModAltas.pedirPassword()) { Shell.pintarNav(); render(main); } return; }
-      const st = e.target.closest('[data-st]'); if (st) { avanzar(Number(st.closest('.task').dataset.id)); return; }
+      const st = e.target.closest('[data-st]'); if (st) { avanzar(Number(st.closest('[data-tk]').dataset.tk)); return; }
+      const op = e.target.closest('[data-open]'); if (op) { Tareas.detalle(Number(op.closest('[data-tk]').dataset.tk)); return; }
+      const rc = e.target.closest('[data-rc]'); if (rc) { Tareas.detalle(Number(rc.dataset.rc)); return; }
+      if (e.target.closest('[data-nuevo-rc]')) { Tareas.abrir({ tipo: 'recordatorio' }); return; }
+      const iv = e.target.closest('[data-ir-vista]'); if (iv) { e.preventDefault(); ModTareas.irA(iv.dataset.irVista); return; }
+      if (e.target.closest('[data-foco]')) { Tareas.unaAUna(Tareas.vista(rango()).filter(t => !t.hecha && t.tipo !== 'recordatorio').map(t => t.id), rango() === 'semana' ? 'Mi semana' : 'Este mes'); return; }
+      const rg = e.target.closest('[data-rango]'); if (rg) { const bw = rg.closest('.w')?.dataset.w; Datos.set('_panelRango', rg.dataset.rango); semOff = 0; calVista = null; repintarBloque('tickets'); repintarBloque('calendario'); $(`.w[data-w="${bw}"] [data-rango="${rg.dataset.rango}"]`)?.focus(); return; }
       const al = e.target.closest('[data-alta]'); if (al) { ModAltas.abrir(Number(al.dataset.alta)); location.hash = '#altas'; return; }
-      const ed = e.target.closest('.task [data-edit]'); if (ed) { const t = Tareas.todas().find(x => x.id === Number(ed.closest('.task').dataset.id)); if (t) Tareas.abrir({ tarea: t }); return; }
       const ir = e.target.closest('[data-ir]'); if (ir) { ModCalendario.irA(ir.dataset.ir); return; }
-      const dia = e.target.closest('[data-dia]'); if (dia) { Tareas.abrir({ fecha: dia.dataset.dia }); return; }
+      const wc = e.target.closest('[data-wc]'); if (wc) { const d = Number(wc.dataset.wc); semOff = d === 0 ? 0 : semOff + d; repintarBloque('calendario'); $(`[data-wc="${d}"]`)?.focus(); return; }
       const mc = e.target.closest('[data-mc]'); if (mc) { const d = Number(mc.dataset.mc), now = new Date(); let v = calVista || { anio: now.getFullYear(), mes: now.getMonth() };
-        v = d === 0 ? { anio: now.getFullYear(), mes: now.getMonth() } : { anio: v.anio + Math.floor((v.mes + d) / 12), mes: ((v.mes + d) % 12 + 12) % 12 }; calVista = v; repintarBloque('calendario'); return; }
+        v = d === 0 ? { anio: now.getFullYear(), mes: now.getMonth() } : { anio: v.anio + Math.floor((v.mes + d) / 12), mes: ((v.mes + d) % 12 + 12) % 12 }; calVista = v; repintarBloque('calendario'); $(`[data-mc="${d}"]`)?.focus(); return; }
       const w = e.target.closest('.w'); if (!w) return;
       if (e.target.closest('[data-remove]')) { setLayout(L.filter(k => k !== w.dataset.w)); render(main); return; }
       if (e.target.closest('[data-ancho]')) { const a = anchos(); a[w.dataset.w] = !a[w.dataset.w]; Datos.set('panelAncho', a); render(main); return; }
@@ -251,16 +281,17 @@ const ModInicio = (() => {
     });
   }
 
-  /* Botón de estado en el panel: pendiente → en proceso → terminado. */
+  /* Círculo de estado en el panel: avanza el ticket; si queda hecho, se ve tachado un momento y después sale de la lista. */
   function avanzar(id) {
     const t = Tareas.avanzar(id); if (!t) return;
     Shell.pintarNav();
     if (t.hecha) {
-      const s = semana(), quedan = activas().filter(x => x.fecha && x.fecha >= s.L && x.fecha <= s.D).length;
-      Ficus.decir(quedan ? `¡Terminada! Te quedan ${quedan} esta semana.` : '¡Semana despejada! Me voy a hacer la fotosíntesis tranquilo.', 'yay');
+      const quedan = Tareas.vista('semana').filter(x => !x.hecha && x.tipo !== 'recordatorio').length;
+      Ficus.decir(quedan ? `¡Hecha! Te quedan ${quedan} esta semana.` : '¡Semana despejada! Me voy a hacer la fotosíntesis tranquilo.', 'yay');
       if (t.siguiente) toast(`Siguiente repetición creada: ${Fecha.corta(Fecha.parse(t.siguiente))}`);
     } else Tareas.celebrar(t);
-    $$(`.task[data-id="${id}"]`).forEach(li => { li.className = `task p-${t.prioridad} est-${t.estado}${t.hecha ? ' done' : ''}`; const b = $('[data-st]', li); b.className = `st st-${t.estado} st-min`; b.querySelector('span').textContent = Tareas.ESTADO[t.estado]; b.setAttribute('aria-label', `Estado: ${Tareas.ESTADO[t.estado]}. Pulsa para cambiarlo`); });
+    $$(`.w [data-tk="${id}"]`).forEach(li => { li.classList.toggle('done', t.hecha); const b = $('[data-st]', li); b.className = `tk-st st-${t.estado}`; b.setAttribute('aria-label', `Estado: ${Tareas.estadoTxt(t)}. Pulsa para avanzar`); b.title = `${Tareas.estadoTxt(t)} · pulsa para avanzar`; });
+    clearTimeout(avanzar._t); avanzar._t = setTimeout(() => { if (location.hash.slice(1) !== 'inicio' && location.hash) return; ['tickets', 'calendario', 'saludo'].forEach(repintarBloque); }, t.hecha ? 900 : 0);
   }
 
   return { render, reset: () => setLayout(POR_DEFECTO) };

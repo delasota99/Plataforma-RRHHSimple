@@ -57,11 +57,11 @@ const ModPruebas = (() => {
     const editando = !!p0.id, hoy = hoyISO();
     const lista = MotorEmpleados.filtrar(Empleados.todos(), { estado: editando ? 'todos' : 'activos', hoy });
     if (!lista.length) { toast('Primero añade empleados'); return; }
-    let empId = p0.empleadoId || lista[0].id;
+    let empId = p0.empleadoId || '';
     const resp = MotorEmpleados.valores(Empleados.todos(), 'responsable');
     const d = abrirModal(`<form id="pF" novalidate><div class="dlg-b">
       <h2 style="font-size:20px;font-weight:600;margin:0 0 14px">${p0.desdeAlta ? 'Periodo de prueba de la nueva incorporación' : editando ? 'Periodo de prueba' : 'Nuevo periodo de prueba'}</h2>
-      <div class="field"><label for="pEmp">Persona</label><select id="pEmp" ${editando ? 'disabled' : ''}>${lista.map(e => `<option value="${e.id}" ${e.id === empId ? 'selected' : ''}>${esc(e.nombreCompleto)} · ${esc(e.puesto || 'sin puesto')}</option>`).join('')}</select></div>
+      ${SelPersona.campo('pEmp', 'Persona', { valor: empId, ids: lista.map(e => e.id), disabled: editando })}
       <div class="row2"><div class="field"><label for="pIni">Inicio</label><input type="date" id="pIni" value="${p0.inicio || ''}"></div>
         <div class="field"><label for="pRes">Responsable</label><input id="pRes" list="pResL" value="${esc(p0.responsable || '')}" placeholder="Quién valora el periodo"><datalist id="pResL">${resp.map(x => `<option value="${esc(x)}">`).join('')}</datalist></div></div>
       <div><span class="flabel">Duración</span><div class="chips-sel" id="pMes">${C.opciones.map(m => `<button type="button" role="radio" data-m="${m}" aria-checked="false">${m} mes${m === 1 ? '' : 'es'}</button>`).join('')}</div><div class="hint" id="pMax"></div></div>
@@ -74,6 +74,7 @@ const ModPruebas = (() => {
       <p class="form-err" id="pErr" role="alert"></p>
     </div><div class="dlg-f">${editando ? '<button type="button" class="btn ghost danger" id="pDel" style="margin-right:auto">Eliminar</button>' : ''}<button type="button" class="btn ghost" id="pC">${p0.desdeAlta ? 'Ahora no' : 'Cancelar'}</button><button class="btn">${editando ? 'Guardar' : 'Crear y programar avisos'}</button></div></form>`, { ancho: 620 });
     let meses = p0.meses || null, resultado = p0.resultado || '', hitosHechos = Object.fromEntries((p0.hitos || []).map(h => [h.id, !!h.hecho]));
+    SelPersona.enlazar(d);
     const empleado = () => Empleados.buscar(Number($('#pEmp', d).value));
     function actualizar(primera = false) {
       const e = empleado(), cat = Calc.categoriaDePuesto(e?.puesto), max = MotorProcesos.maxMeses(cat?.id, C);
@@ -99,6 +100,7 @@ const ModPruebas = (() => {
       ev.preventDefault();
       const ini = $('#pIni', d).value; if (!ini || !meses) { $('#pErr', d).textContent = 'Indica el inicio y la duración.'; return; }
       const id = Number($('#pEmp', d).value);
+      if (!id) { $('#pErr', d).textContent = 'Elige a la persona.'; $('#pEmp-q', d).focus(); return; }
       let p = await Procesos.Pruebas.guardar(id, { id: p0.id, inicio: ini, meses, responsable: $('#pRes', d).value.trim(), interrumpeIT: $('#pIT', d).checked });
       p = await Procesos.Pruebas.guardar(id, { id: p.id, hitos: p.hitos.map(h => ({ ...h, hecho: !!hitosHechos[h.id] })) });
       if (editando && resultado !== (p0.resultado || '')) await Procesos.Pruebas.resolver(id, p.id, resultado, $('#pFr', d).value, $('#pNr', d).value.trim());

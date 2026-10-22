@@ -85,20 +85,22 @@ const ModNominas = (() => {
     const d = abrirModal(`<form id="nF" novalidate><div class="dlg-b">
       <h2 style="font-size:20px;font-weight:600;margin:0 0 14px">Añadir variable · ${titMes(mes)}</h2>
       <div class="field"><label for="nCat">Concepto</label><select id="nCat">${man.map(c => `<option value="${c.id}" ${c.id === cat ? 'selected' : ''}>${esc(c.titulo)}</option>`).join('')}</select></div>
-      <div class="field"><label for="nEmp">Persona</label><select id="nEmp">${lista.map(e => `<option value="${e.id}">${esc(e.codigo)} · ${esc(e.nombreCompleto)}</option>`).join('')}</select></div>
+      ${SelPersona.campo('nEmp', 'Persona', { ids: lista.map(e => e.id) })}
       <div class="field"><label for="nDet">Detalle</label><input id="nDet" maxlength="120" autocomplete="off"></div>
       <p class="form-err" id="nErr" role="alert"></p>
     </div><div class="dlg-f"><button type="button" class="btn ghost" id="nC">Cancelar</button><button type="submit" class="btn ghost" data-otra="1">Guardar y añadir otra</button><button class="btn">Guardar</button></div></form>`, { ancho: 520 });
     const pista = () => { $('#nDet', d).placeholder = PISTA[$('#nCat', d).value] || ''; };
-    $('#nCat', d).onchange = pista; pista(); $('#nEmp', d).focus();
+    SelPersona.enlazar(d);
+    $('#nCat', d).onchange = pista; pista(); $('#nEmp-q', d).focus();
     $('#nC', d).onclick = () => d.close('cancel');
     $('#nF', d).onsubmit = async ev => {
       ev.preventDefault();
       const det = $('#nDet', d).value.trim(); if (!det) { $('#nErr', d).textContent = 'Escribe el detalle.'; $('#nDet', d).focus(); return; }
       const id = Number($('#nEmp', d).value), e = Empleados.buscar(id);
+      if (!e) { $('#nErr', d).textContent = 'Elige a la persona.'; $('#nEmp-q', d).focus(); return; }
       await Empleados.editarEmpleado(id, { variablesNomina: [...(e.variablesNomina || []), { id: Date.now(), mes, cat: $('#nCat', d).value, detalle: det }] });
       toast('Variable añadida'); pintar();
-      if (ev.submitter?.dataset.otra) { $('#nDet', d).value = ''; $('#nErr', d).textContent = ''; $('#nEmp', d).focus(); } else d.close('ok');
+      if (ev.submitter?.dataset.otra) { $('#nDet', d).value = ''; $('#nErr', d).textContent = ''; $('#nEmp-q', d).focus(); } else d.close('ok');
     };
   }
 

@@ -51,7 +51,7 @@ const ModPromociones = (() => {
     const puestos = [...new Set([...P.puestos.map(p => p.puesto), ...MotorEmpleados.valores(Empleados.todos(), 'puesto')])];
     const d = abrirModal(`<form id="prF" novalidate><div class="dlg-b">
       <h2 style="font-size:20px;font-weight:600;margin:0 0 14px">Registrar un cambio</h2>
-      <div class="field"><label for="prE">Persona</label><select id="prE">${lista.map(e => `<option value="${e.id}" ${e.id === o.empleadoId ? 'selected' : ''}>${esc(e.nombreCompleto)} · ${esc(e.puesto || 'sin puesto')}</option>`).join('')}</select></div>
+      ${SelPersona.campo('prE', 'Persona', { valor: o.empleadoId, ids: lista.map(e => e.id) })}
       <div class="row2"><div class="field"><label for="prFe">Fecha</label><input type="date" id="prFe" value="${hoy}"></div>
         <div class="field"><label for="prTi">Tipo de cambio</label><select id="prTi">${P.tiposPromocion.map(t => `<option>${esc(t)}</option>`).join('')}</select></div></div>
       <div id="prCampos"></div>
@@ -59,7 +59,8 @@ const ModPromociones = (() => {
       <label class="check" id="prActBox"><input type="checkbox" id="prAct" checked> <span id="prActT">Actualizar la ficha</span></label>
       <p class="form-err" id="prErr" role="alert"></p>
     </div><div class="dlg-f"><button type="button" class="btn ghost" id="prC">Cancelar</button><button class="btn">Registrar</button></div></form>`, { ancho: 600 });
-    const emp = () => Empleados.buscar(Number($('#prE', d).value));
+    SelPersona.enlazar(d);
+    const emp = () => Empleados.buscar(Number($('#prE', d).value)) || {};
     function campos() {
       const e = emp(), t = $('#prTi', d).value;
       let h = '', act = '';
@@ -92,6 +93,7 @@ const ModPromociones = (() => {
       if (t === 'Subida salarial') { p.salarioAnterior = Calc.num($('#prSa', d).value) || ''; p.salarioNuevo = Calc.num($('#prSn', d).value) || ''; p.de = p.salarioAnterior ? euros(p.salarioAnterior) : ''; p.a = p.salarioNuevo ? euros(p.salarioNuevo) : ''; if (!(p.salarioNuevo > 0)) { $('#prErr', d).textContent = 'Indica el salario nuevo.'; return; } }
       else { p.de = $('#prDe', d).value.trim(); p.a = $('#prA', d).value.trim(); if (!p.a) { $('#prErr', d).textContent = 'Indica la situación nueva.'; return; } }
       if (!p.fecha) { $('#prErr', d).textContent = 'Indica la fecha.'; return; }
+      if (!$('#prE', d).value) { $('#prErr', d).textContent = 'Elige a la persona.'; $('#prE-q', d).focus(); return; }
       await Procesos.Promociones.guardar(Number($('#prE', d).value), p, $('#prAct', d).checked && !$('#prActBox', d).hidden);
       d.close('ok'); toast('Cambio registrado'); Ficus.decir('Anotado. Cuenta para el plan de igualdad.', 'yay');
       if (main && location.hash === '#promociones') render(main);

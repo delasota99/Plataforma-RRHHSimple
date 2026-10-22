@@ -8,6 +8,7 @@ const ModSalarios = (() => {
       <div class="page-h"><a class="crumb" href="#inicio">← Inicio</a><h1>Salarios</h1><p>Busca un puesto de la empresa o una categoría del convenio y mira lo que corresponde, también a jornada parcial.</p></div>
       <div class="calc sal-layout">
         <div class="card form">
+          <div id="salEmp"></div>
           <div class="field"><label for="sQ">Buscar puesto o categoría</label><input id="sQ" type="search" value="${esc(q)}" placeholder="p. ej. producción, oficial, técnico…" autocomplete="off"></div>
           <div class="sal-list" id="sList" role="listbox" aria-label="Resultados"></div>
         </div>
@@ -18,11 +19,19 @@ const ModSalarios = (() => {
             <p><b>Salario anual</b> = salario mensual × ${T.pagasSalarioMensual} pagas, o salario diario × ${T.diasAbonadosSalarioDiario} días (365 + 4 pagas de 30 días).</p>
             <p><b>Pagas extra (convenio art. 24):</b> 4 de 30 días de salario base y antigüedad. En la empresa, 2 se prorratean en la nómina y las otras 2 se cobran en junio y diciembre.</p>
             <p><b>Jornada:</b> ${P.jornada.horasAnuales} horas al año (convenio art. 10). A tiempo parcial, todo en proporción a las horas.</p>
-            <p style="margin:0"><b>Prima de asistencia (art. 23):</b> ${euros(T.primaAsistenciaDia)} por día efectivamente trabajado, aparte del salario de tablas (importe provisional ${T.anio}).</p>`)}
+            <p style="margin:0"><b>Prima de asistencia (art. 23):</b> ${euros(T.primaAsistenciaDia)} por día efectivamente trabajado, aparte del salario de tablas (importe provisional ${T.anio}).</p>
+            <p style="margin:8px 0 0"><b>Gastos de desplazamiento (art. 42):</b> comida ${euros(T.dietas.comida)}, cena ${euros(T.dietas.cena)}, alojamiento ${euros(T.dietas.alojamiento)} y desayuno ${euros(T.dietas.desayuno)}. <b>Quebranto de moneda (art. 43):</b> ${euros(T.quebrantoMoneda.importe)}. Importes provisionales ${T.anio}.</p>`)}
         </div>
       </div>
     </div>`;
     $('#sQ').addEventListener('input', e => { q = e.target.value; lista(); });
+    Calc.empleado($('#salEmp'), e => {
+      if (!e) return;
+      const cat = Calc.categoriaDePuesto(e.puesto);
+      if (!cat) { toast(`El puesto de ${e.nombreCompleto} (${e.puesto || 'sin puesto'}) no tiene categoría asignada: búscala en la lista`); return; }
+      sel = { catId: cat.id, puesto: e.puesto }; q = ''; $('#sQ').value = ''; lista(); detalle();
+      if (e.salario) toast(`${e.nombreCompleto}: ${euros(e.salario)} brutos/año en su ficha · tablas ${euros(cat.anual)}`);
+    });
     lista(); detalle();
   }
 

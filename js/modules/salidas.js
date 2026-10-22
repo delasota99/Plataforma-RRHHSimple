@@ -55,7 +55,7 @@ const ModSalidas = (() => {
     let s = { check: {}, motivo: o.motivo || '', fechaBaja: o.fechaBaja || '', fechaComunicacion: '', ...(existente || {}) };
     const d = abrirModal(`<form id="sF" novalidate><div class="dlg-b">
       <h2 style="font-size:20px;font-weight:600;margin:0 0 14px">${existente ? 'Salida' : 'Nueva salida'}</h2>
-      <div class="field"><label for="sEmp">Persona</label><select id="sEmp" ${existente ? 'disabled' : ''}>${lista.map(e => `<option value="${e.id}" ${e.id === o.empleadoId ? 'selected' : ''}>${esc(e.nombreCompleto)} · ${esc(e.puesto || 'sin puesto')}</option>`).join('')}</select></div>
+      ${SelPersona.campo('sEmp', 'Persona', { valor: o.empleadoId, ids: lista.map(e => e.id), disabled: !!existente })}
       <div class="field"><label for="sMot">Motivo</label><select id="sMot"><option value="">— Elige —</option>${P.motivosBaja.map(m => `<option ${s.motivo === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></div>
       <div class="row2"><div class="field"><label for="sCom">Fecha de comunicación</label><input type="date" id="sCom" value="${s.fechaComunicacion || ''}"></div>
         <div class="field"><label for="sFb">Último día de alta</label><input type="date" id="sFb" value="${s.fechaBaja || ''}"></div></div>
@@ -66,6 +66,7 @@ const ModSalidas = (() => {
       <button type="button" class="btn ghost" id="sFin">${icon('finiquito')}Calcular finiquito</button>
       ${existente && !s.cerrada ? '<button type="button" class="btn ghost" id="sCerrar">Cerrar salida</button>' : ''}
       <button type="button" class="btn ghost" id="sC">Cancelar</button><button class="btn">${existente ? 'Guardar' : 'Iniciar salida'}</button></div></form>`, { ancho: 640 });
+    SelPersona.enlazar(d);
     const emp = () => Empleados.buscar(Number($('#sEmp', d).value));
     function preaviso() {
       const e = emp(), mot = $('#sMot', d).value, com = $('#sCom', d).value, fb = $('#sFb', d).value, box = $('#sPre', d);
@@ -85,13 +86,14 @@ const ModSalidas = (() => {
     const leer = () => ({ motivo: $('#sMot', d).value, fechaComunicacion: $('#sCom', d).value, fechaBaja: $('#sFb', d).value, check: s.check });
     async function guardar(extra = {}) {
       const datos = { ...leer(), ...extra };
+      if (!emp()) { $('#sErr', d).textContent = 'Elige a la persona.'; $('#sEmp-q', d).focus(); return false; }
       if (!datos.fechaBaja) { $('#sErr', d).textContent = 'Indica el último día de alta.'; return false; }
       if (extra.cerrada && !datos.motivo) { $('#sErr', d).textContent = 'Indica el motivo antes de cerrar.'; return false; }
       await Procesos.Salidas.guardar(emp().id, datos); return true;
     }
     ['sMot', 'sCom', 'sFb'].forEach(id => $('#' + id, d).addEventListener('input', preaviso));
     $('#sC', d).onclick = () => d.close('cancel');
-    $('#sFin', d).onclick = async () => { const e = emp(), x = leer(); if (await guardar()) { d.close('ok'); ModFiniquito.paraEmpleado(e.id, { fin: x.fechaBaja, voluntaria: x.motivo === 'Baja voluntaria', comunicacion: x.fechaComunicacion }); } };
+    $('#sFin', d).onclick = async () => { const e = emp(), x = leer(); if (e && await guardar()) { d.close('ok'); ModFiniquito.paraEmpleado(e.id, { fin: x.fechaBaja, voluntaria: x.motivo === 'Baja voluntaria', comunicacion: x.fechaComunicacion }); } };
     $('#sCerrar', d) && ($('#sCerrar', d).onclick = async () => {
       const pr = MotorProcesos.progresoSalida(PASOS, s);
       if (pr.faltan.length && !confirmarSuave()) return;

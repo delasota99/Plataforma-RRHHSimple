@@ -3,17 +3,17 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.9.1 · nóminas';
+  const VERSION = '0.10 · tickets';
   /* Secciones de la barra lateral (acordeón) y su página de resumen. */
   const SECCIONES = [
+    { id: 'trabajo', nombre: 'Trabajo diario', desc: 'Tus tickets, documentos listos para enviar, el calendario y los accesos a las webs de trabajo.', items: [['tareas', 'Tareas'], ['documentos', 'Documentos'], ['calendario', 'Calendario'], ['herramientas', 'Herramientas']] },
     { id: 'personas', nombre: 'Personas', desc: 'La plantilla, sus ausencias y los informes de igualdad.', items: [['empleados', 'Empleados'], ['ausencias', 'Ausencias'], ['informes', 'Informes']] },
     { id: 'procesos', nombre: 'Procesos', desc: 'Del reclutamiento a la salida: cada etapa de la vida laboral, con sus pasos y avisos.', items: [['reclutamiento', 'Reclutamiento'], ['altas', 'Altas'], ['pruebas', 'Periodos de prueba'], ['promociones', 'Promociones'], ['salidas', 'Bajas y salidas'], ['nominas', 'Nóminas']] },
-    { id: 'trabajo', nombre: 'Trabajo diario', desc: 'Tareas, documentos listos para enviar y el calendario.', items: [['tareas', 'Tareas'], ['documentos', 'Documentos'], ['calendario', 'Calendario']] },
     { id: 'calculadoras', nombre: 'Calculadoras', desc: 'Cálculos del convenio y del Estatuto, con su base legal.', items: [['salarios', 'Salarios'], ['vacaciones', 'Vacaciones'], ['permisos', 'Permisos'], ['nacimiento', 'Nacimiento'], ['indemnizacion', 'Indemnización'], ['finiquito', 'Finiquito']] }
   ];
   const NAV = [['', [['inicio', 'Inicio']]], ...SECCIONES.map(x => [x.nombre, [[x.id, x.nombre], ...x.items]]), ['', [['ajustes', 'Ajustes']]]];
   const ETIQ = Object.fromEntries(NAV.flatMap(g => g[1]));
-  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, ausencias: ModAusencias, informes: ModInformes, reclutamiento: ModReclutamiento, pruebas: ModPruebas, promociones: ModPromociones, salidas: ModSalidas, nominas: ModNominas, tareas: ModTareas, calendario: ModCalendario, vacaciones: ModVacaciones, documentos: ModDocumentos, salarios: ModSalarios, permisos: ModPermisos, nacimiento: ModNacimiento, indemnizacion: ModIndemnizacion, finiquito: ModFiniquito, ajustes: ModAjustes };
+  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, ausencias: ModAusencias, informes: ModInformes, reclutamiento: ModReclutamiento, pruebas: ModPruebas, promociones: ModPromociones, salidas: ModSalidas, nominas: ModNominas, tareas: ModTareas, herramientas: ModHerramientas, calendario: ModCalendario, vacaciones: ModVacaciones, documentos: ModDocumentos, salarios: ModSalarios, permisos: ModPermisos, nacimiento: ModNacimiento, indemnizacion: ModIndemnizacion, finiquito: ModFiniquito, ajustes: ModAjustes };
   SECCIONES.forEach(x => { MODULOS[x.id] = { render: m => ModSecciones.render(m, x) }; });
   const FASE = {};
   const main = $('#main');
@@ -113,18 +113,28 @@ const Shell = (() => {
 
   /* ---------- Tareas: al crear, editar o borrar se refresca la vista ---------- */
   function abrirTarea() { cerrarMenu(); Tareas.abrir(); }
-  Tareas.alCambiar(() => { pintarNav(); if (['inicio', 'tareas', 'calendario'].includes(ruta())) { const y = scrollY; MODULOS[ruta()].render(main); scrollTo(0, y); } });
+  Tareas.alCambiar(() => {
+    pintarNav();
+    if (!['inicio', 'tareas', 'calendario', 'trabajo'].includes(ruta())) return;
+    // Repinta sin perder la posición ni el foco (si estaba en un ticket, vuelve a él).
+    const y = scrollY, a = document.activeElement, tk = main.contains(a) && a.closest('[data-tk]');
+    const sel = tk ? `[data-tk="${tk.dataset.tk}"] ${a.matches('[data-st]') ? '[data-st]' : a.matches('[data-open]') ? '[data-open]' : ''}`.trim() : null;
+    MODULOS[ruta()].render(main); scrollTo(0, y);
+    if (sel) $(sel, main)?.focus({ preventScroll: true });
+  });
 
   /* ---------- Buscador Ctrl + K (sin animación: se abre con teclado) ---------- */
   const cmdk = $('#cmdk'), cIn = $('#cmdIn'), cList = $('#cmdList');
   let items = [], sel = 0;
   const ACCIONES = [
     { l: 'Nueva tarea', h: 'Acción', run: abrirTarea },
+    { l: 'Nuevo recordatorio', h: 'Acción', run: () => { cerrarMenu(); Tareas.abrir({ tipo: 'recordatorio' }); } },
+    { l: 'Revisar mis tickets una a una', h: 'Acción', run: () => Tareas.unaAUna(Tareas.vista('semana').filter(t => !t.hecha).map(t => t.id), 'Mi semana') },
     { l: 'Nueva alta', h: 'Acción', run: () => ModAltas.nueva(null) },
     { l: 'Nuevo empleado', h: 'Acción', run: () => { location.hash = '#empleados'; setTimeout(() => $('#nuevo')?.click(), 80); } },
     { l: 'Bloquear empleados', h: 'Acción', run: () => { Empleados.bloquear(); toast('Empleados bloqueados'); } },
     { l: 'Guardar copia de seguridad', h: 'Acción', run: guardarCopia },
-    { l: 'Exportar tareas al calendario (.ics)', h: 'Acción', run: () => Tareas.descargarIcs(Tareas.todas().filter(t => !t.hecha), 'tareas-pendientes') },
+    { l: 'Exportar tickets al calendario (.ics)', h: 'Acción', run: () => Tareas.descargarIcs(Tareas.todas().filter(t => !t.hecha && t.fecha), 'tickets-pendientes') },
     { l: 'Añadir festivo de empresa', h: 'Acción', run: () => { location.hash = '#calendario'; setTimeout(() => $('#empF')?.focus(), 80); } },
     { l: 'Modo oscuro', h: 'Acción', run: () => setTema('dark') },
     { l: 'Modo claro', h: 'Acción', run: () => setTema('light') },
@@ -132,11 +142,13 @@ const Shell = (() => {
   ];
   function llenar() {
     const q = norm(cIn.value.trim());
-    const herramientas = Object.entries(ETIQ).map(([r, l]) => ({ l, h: MODULOS[r] ? 'Herramienta' : `Fase ${FASE[r]}`, r, run: () => location.hash = '#' + r }));
+    const herramientas = Object.entries(ETIQ).map(([r, l]) => ({ l, h: MODULOS[r] ? 'Página' : `Fase ${FASE[r]}`, r, run: () => location.hash = '#' + r }));
     const f = l => q ? l.filter(x => norm(x.l + ' ' + x.h).includes(q)) : l;
     const emps = Empleados.desbloqueado ? Empleados.todos().map(e => ({ l: e.nombreCompleto, h: `${e.codigo} · ${e.departamento || e.centro || ''}`, r: 'empleados', run: () => { ModEmpleados.abrir(e.id); if (location.hash === '#empleados') render(); else location.hash = '#empleados'; } })) : [];
     const altas = Altas.enCurso().map(a => ({ l: `Alta de ${a.nombre}`, h: `${Math.round(MotorAltas.progreso(a).pct * 100)} % · ${a.centro}`, r: 'altas', run: () => { ModAltas.abrir(a.id); if (location.hash === '#altas') render(); else location.hash = '#altas'; } }));
-    const secs = [['Herramientas', f(herramientas).slice(0, q ? 8 : 6)], ['Empleados', q ? f(emps).slice(0, 6) : []], ['Altas en curso', f(altas).slice(0, q ? 6 : 3)], ['Acciones', f(ACCIONES)]];
+    const webs = Herramientas.todas().map(h => ({ l: h.nombre, h: `${h.desc || 'Web'} · se abre en una pestaña nueva`, r: 'herramientas', run: () => Herramientas.abrir(h) }));
+    const tickets = q ? Tareas.todas().filter(t => !MotorTareas.archivado(t, Date.now())).map(t => ({ l: `${MotorTareas.clave(t.clave)} · ${t.titulo}`, h: `${Tareas.estadoTxt(t)} · ${Tareas.cat(t.categoria).nombre}`, r: 'tareas', run: () => Tareas.detalle(t.id) })) : [];
+    const secs = [['Páginas', f(herramientas).slice(0, q ? 8 : 6)], ['Accesos web', f(webs).slice(0, q ? 6 : 4)], ['Tickets', f(tickets).slice(0, 6)], ['Empleados', q ? f(emps).slice(0, 6) : []], ['Altas en curso', f(altas).slice(0, q ? 6 : 3)], ['Acciones', f(ACCIONES)]];
     items = secs.flatMap(s => s[1]); sel = Math.min(sel, Math.max(0, items.length - 1));
     let i = 0;
     cList.innerHTML = items.length ? secs.filter(s => s[1].length).map(([n, l]) => `<li class="cmd-sec" role="presentation">${n}</li>` + l.map(x => { const k = i++;

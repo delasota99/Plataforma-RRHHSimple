@@ -21,7 +21,7 @@ const ModCalendario = (() => {
   function datos(c) {
     const fest = MotorFestivos.delAnio(P.festivos, c.anio, c.capas, c.empresa ? empresa() : []);
     const tareas = new Map();
-    if (c.tareas) Tareas.todas().filter(t => t.fecha.startsWith(c.anio + '-')).forEach(t => { if (!tareas.has(t.fecha)) tareas.set(t.fecha, []); tareas.get(t.fecha).push(t); });
+    if (c.tareas) { const ahora = Date.now(); Tareas.todas().filter(t => MotorTareas.enCalendario(t) && !MotorTareas.archivado(t, ahora) && t.fecha.startsWith(c.anio + '-')).forEach(t => { if (!tareas.has(t.fecha)) tareas.set(t.fecha, []); tareas.get(t.fecha).push(t); }); }
     return { fest, tareas, aus: c.ausencias ? ausenciasDelAnio(c.anio) : new Map() };
   }
   /* Ausencias: solo se marca el día en que terminan (fin real o previsto). Sin fecha de fin, no se marcan.
@@ -47,9 +47,9 @@ const ModCalendario = (() => {
       const f = iso(c.anio, c.mes, d), fs = D.fest.get(f) || [], ts = (D.tareas.get(f) || []).filter(t => !t.hecha), as = D.aus.get(f) || [], dow = (off + d - 1) % 7;
       const etiquetas = fs.slice(0, 2).map(x => `<span class="ev tag-${x.capa}" title="${esc(x.nombre)} · ${etiquetaCapa(x.capa, x.ambito)}">${esc(x.nombre)}</span>`).join('') + (fs.length > 2 ? `<span class="ev more">+${fs.length - 2}</span>` : '');
       const puntos = fs.map(x => `<i class="dot tag-${x.capa}"></i>`).join('') + ((D.aus.get(f) || []).length ? `<i class="dot" style="--c:${D.aus.get(f)[0].color}"></i>` : '');
-      const aria = `${d} de ${MESES[c.mes].toLowerCase()}${fs.length ? ': ' + fs.map(x => x.nombre).join(', ') : ''}${ts.length ? `, ${ts.length} tarea${ts.length > 1 ? 's' : ''}` : ''}`;
+      const aria = `${d} de ${MESES[c.mes].toLowerCase()}${fs.length ? ': ' + fs.map(x => x.nombre).join(', ') : ''}${ts.length ? `, ${ts.length} recordatorio${ts.length > 1 ? 's' : ''} o aviso${ts.length > 1 ? 's' : ''}` : ''}`;
       celdas += `<button class="cd${dow > 4 ? ' finde' : ''}${fs.length ? ' fest' : ''}${f === hoy ? ' hoy' : ''}${f === c.sel ? ' sel' : ''}" data-f="${f}" aria-label="${esc(aria)}" aria-pressed="${f === c.sel}">
-        <span class="num">${d}</span>${ts.length ? `<span class="tcount" title="${ts.length} tarea(s)">${ts.length}</span>` : ''}
+        <span class="num">${d}</span>${ts.length ? `<span class="tcount" title="${ts.length} recordatorio(s) o aviso(s)">${ts.length}</span>` : ''}
         <span class="evs">${etiquetas}${as.length ? `<span class="ev aus" style="--tc:${as[0].color}" title="${esc('Termina la ausencia: ' + as.map(x => x.nombre + (x.tipo ? ' · ' + x.tipo : '')).join(', '))}">${as.length > 1 ? `Fin de ${as.length} ausencias` : 'Fin: ' + esc(as[0].corto)}</span>` : ''}</span><span class="dots">${puntos}</span></button>`;
     }
     return `<div class="mes-nav"><button class="icon-btn" data-nav="-1" aria-label="Mes anterior"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
@@ -90,8 +90,8 @@ const ModCalendario = (() => {
       <div class="dp-h"><div class="cal lg"><small>${Fecha.mesCorto(t)}</small><b>${new Date(t).getUTCDate()}</b></div><div><b class="dp-dia">${Fecha.diaSemana(t)}</b><span class="muted">${Fecha.larga(t)}</span></div></div>
       ${fs.length ? `<ul class="dp-list">${fs.map(x => `<li><span class="chip-c tag-${x.capa}">${etiquetaCapa(x.capa, x.ambito)}</span>${esc(x.nombre)}</li>`).join('')}</ul>` : '<p class="muted small">Día laborable (con las capas activas).</p>'}
       ${c.ausencias && (D.aus.get(f) || []).length ? `<h4>Terminan ausencias</h4><ul class="dp-aus">${D.aus.get(f).map(x => `<li style="--tc:${x.color}"><i></i>${Empleados.desbloqueado ? `<button class="linkbtn" data-aus-dia="${x.id}">${esc(x.nombre)}</button><span class="muted small">${esc(x.tipo)}</span>` : 'Ausencia <span class="muted small">(desbloquea Empleados para ver quién)</span>'}</li>`).join('')}</ul>` : ''}
-      ${c.tareas ? `<h4>Tareas</h4>${ts.length ? `<ul class="dp-tasks">${ts.map(x => `<li class="${x.hecha ? 'done' : ''}"><i class="est ${x.estado}" title="${Tareas.ESTADO[x.estado]}"></i><i class="prio ${x.prioridad}"></i><button class="linkbtn" data-tarea="${x.id}">${esc(x.titulo)}</button></li>`).join('')}</ul>` : '<p class="muted small">Sin tareas.</p>'}` : ''}
-      <div class="dp-acts"><button class="btn sm" data-tarea-dia>+ Tarea este día</button>
+      ${c.tareas ? `<h4>Recordatorios y avisos</h4>${ts.length ? `<ul class="dp-tasks">${ts.map(x => `<li class="${x.hecha ? 'done' : ''}"><i class="est ${x.estado}" title="${Tareas.estadoTxt(x)}"></i>${Tareas.chipCat(x.categoria, true)}<button class="linkbtn" data-tarea="${x.id}">${esc(x.titulo)}</button><span class="tk-key">${MotorTareas.clave(x.clave)}</span></li>`).join('')}</ul>` : '<p class="muted small">Nada este día.</p>'}` : ''}
+      <div class="dp-acts"><button class="btn sm" data-tarea-dia="recordatorio">+ Recordatorio</button><button class="btn ghost sm" data-tarea-dia="tarea">+ Tarea con aviso</button>
       ${emp ? `<button class="btn ghost sm" data-quitar-emp>Quitar festivo de empresa</button>` : `<button class="btn ghost sm" data-add-emp>Marcar festivo de empresa</button>`}</div>
     </div>`;
   }
@@ -118,12 +118,12 @@ const ModCalendario = (() => {
     const capasBtn = Object.entries(P.capasFestivos).map(([k, v]) => `<button class="layer tag-${k}" data-capa="${k}" aria-pressed="${c.capas.includes(k)}" title="${v.comunidad} + ${v.municipio}"><i></i>${v.nombre}</button>`).join('');
     const localPend = c.capas.some(k => P.festivos[c.anio]?.capas?.[k] && !P.festivos[c.anio].capas[k].local?.dias.length);
     main.innerHTML = `<div class="view">
-      <div class="page-h page-h-row"><div><a class="crumb" href="#inicio">← Inicio</a><h1>Calendario</h1><p>Festivos y tareas de un vistazo. Es informativo: las calculadoras no lo usan.</p></div>
+      <div class="page-h page-h-row"><div><a class="crumb" href="#inicio">← Inicio</a><h1>Calendario</h1><p>Festivos, recordatorios, tareas con aviso y fin de ausencias. Es informativo: las calculadoras no lo usan.</p></div>
         <div class="seg3" role="group" aria-label="Vista">${[['mes', 'Mes'], ['anio', 'Año'], ['lista', 'Lista']].map(([k, l]) => `<button data-vista="${k}" aria-pressed="${c.vista === k}">${l}</button>`).join('')}</div></div>
       <div class="layers" role="group" aria-label="Qué mostrar">
         <span class="layer fixed tag-nac"><i></i>Nacionales</span>${capasBtn}
         <button class="layer tag-empresa" data-emp aria-pressed="${c.empresa}"><i></i>Empresa</button>
-        <button class="layer tag-tarea" data-tar aria-pressed="${c.tareas}"><i></i>Tareas</button>
+        <button class="layer tag-tarea" data-tar aria-pressed="${c.tareas}"><i></i>Recordatorios y avisos</button>
         <button class="layer tag-aus" data-aus aria-pressed="${c.ausencias}"><i></i>Fin de ausencias${c.ausencias && !Empleados.desbloqueado && Empleados.configurado() ? ' (sin nombres)' : ''}</button>
       </div>
       ${sinDatos ? `<div class="note warn">${icon('info')}<div>No hay calendario oficial cargado para ${c.anio}. Solo se muestran tus festivos de empresa y tareas.</div></div>` : localPend ? `<div class="note">${icon('info')}<div>Los festivos locales de ${c.anio} aún no están publicados para alguna de las capas activas.</div></div>` : ''}
@@ -151,7 +151,7 @@ const ModCalendario = (() => {
     $$('.cd[data-f]', main).forEach(b => b.onclick = () => upd({ sel: b.dataset.f }));
     $$('[data-ir]', main).forEach(b => b.onclick = () => { const f = b.dataset.ir; upd({ vista: 'mes', mes: Number(f.slice(5, 7)) - 1, sel: f }, false); });
     $$('[data-mes]', main).forEach(b => b.onclick = () => upd({ vista: 'mes', mes: Number(b.dataset.mes) }, false));
-    $('[data-tarea-dia]', main) && ($('[data-tarea-dia]', main).onclick = () => Tareas.abrir({ fecha: cfg().sel }));
+    $$('[data-tarea-dia]', main).forEach(b => b.onclick = () => Tareas.abrir({ fecha: cfg().sel, tipo: b.dataset.tareaDia, aviso: true }));
     $$('[data-tarea]', main).forEach(b => b.onclick = () => { const t = Tareas.todas().find(x => String(x.id) === b.dataset.tarea); if (t) Tareas.abrir({ tarea: t }); });
     $('[data-add-emp]', main) && ($('[data-add-emp]', main).onclick = () => { $('#empF').value = cfg().sel; $('#empN').focus(); $('#empN').scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' }); });
     $('[data-quitar-emp]', main) && ($('[data-quitar-emp]', main).onclick = () => quitarEmp(cfg().sel, main));

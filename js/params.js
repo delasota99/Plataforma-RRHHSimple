@@ -87,8 +87,12 @@ window.RRHH_PARAMS = {
       { id:'G5', grupo:'Personal de mantenimiento y transporte', nombre:'Personal Ayudante', dia:43.80, anual:21243.00 },
       { id:'H1', grupo:'Personal subalterno', nombre:'Ordenanza', mes:1313.68, anual:21018.88 },
       { id:'H2', grupo:'Personal subalterno', nombre:'Personal de Vigilancia', mes:1304.77, anual:20876.32 },
-      { id:'H3', grupo:'Personal subalterno', nombre:'Personal de Limpieza', dia:43.03, anual:20869.55 }
-    ]
+      { id:'H3', grupo:'Personal subalterno', nombre:'Personal de Limpieza', dia:43.03, anual:20869.55 },
+      { id:'H4', grupo:'Personal subalterno', nombre:'Personal de Limpieza ½ jornada', dia:21.50, anual:10427.50, mediaJornada:true }
+    ],
+    /* Gastos de desplazamiento (art. 42) y quebranto de moneda (art. 43): importes provisionales 2025 del mismo BOE. */
+    dietas: { comida: 17.04, cena: 17.04, alojamiento: 56.99, desayuno: 5.67, fuente: 'Convenio, art. 42 · provisional 2025' },
+    quebrantoMoneda: { importe: 35.53, fuente: 'Convenio, art. 43 · provisional 2025' }
   },
 
   /* Centros de trabajo de la empresa. Los de fábrica añaden pasos específicos en las altas. */
@@ -265,6 +269,32 @@ window.RRHH_PARAMS = {
 
   /* AUSENCIAS: seguimiento (fase 6). Se guardan dentro de la base cifrada de empleados (nunca el diagnóstico).
      ausencia:false → no cuenta como "ausente" (p. ej. reducción de jornada). sinDevengo → no genera vacaciones. */
+  /* Tickets (Trabajo diario → Tareas). Las categorías se pueden cambiar en Ajustes; aquí, las de partida. */
+  tareas: {
+    archivarDias: 7,
+    categorias: [
+      { id:'contratacion', nombre:'Contratación',          color:'#2f7d6d', icono:'altas' },
+      { id:'prueba',       nombre:'Periodo de prueba',     color:'#7a6a1f', icono:'pruebas' },
+      { id:'cambios',      nombre:'Cambios de condiciones', color:'#5b5fb0', icono:'promociones' },
+      { id:'ausencias',    nombre:'Permisos y ausencias',  color:'#b0603a', icono:'ausencias' },
+      { id:'nominas',      nombre:'Nóminas',               color:'#3c7a3a', icono:'nominas' },
+      { id:'bajas',        nombre:'Bajas y salidas',       color:'#a8434f', icono:'salidas' },
+      { id:'gestoria',     nombre:'Gestoría',              color:'#4a6f99', icono:'gestoria' },
+      { id:'prl',          nombre:'PRL',                   color:'#b5671b', icono:'prl' },
+      { id:'legal',        nombre:'Abogado y legal',       color:'#6b4f8a', icono:'legal' },
+      { id:'formacion',    nombre:'Formación e igualdad',  color:'#2e7f99', icono:'formacion' },
+      { id:'otras',        nombre:'Otras tareas',          color:'#77735c', icono:'otras' }
+    ]
+  },
+
+  /* Trabajo diario → Herramientas: accesos web de partida (editables en la propia página). */
+  herramientas: [
+    { id:'nettime', nombre:'netTime One', desc:'Fichador', url:'https://c632.ntone.gospec.net/login.html?q=570838', icono:'reloj', color:'#2e7f99' },
+    { id:'remote',  nombre:'Remote',      desc:'Contratos EOR', url:'https://employ.remote.com/sign-in/?redirect=%2Fdashboard', icono:'globo', color:'#5b5fb0' },
+    { id:'vitaly',  nombre:'Vitaly Workspace', desc:'Servicio de PRL', url:'https://workspace.vitaly.es/features/home', icono:'prl', color:'#3c7a3a' },
+    { id:'claude',  nombre:'Claude',      desc:'Asistente de IA', url:'https://claude.ai/new', icono:'chispa', color:'#b5671b' }
+  ],
+
   ausencias: {
     avisoDias: 5,                    // tarea automática de reincorporación, días antes de la vuelta prevista
     tipos: [

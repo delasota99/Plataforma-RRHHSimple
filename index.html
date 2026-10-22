@@ -74,31 +74,33 @@
 </div>
 
 <!-- Nueva tarea -->
-<dialog id="taskDlg" aria-labelledby="tdT">
+<dialog id="taskDlg" aria-labelledby="tdT" class="tk-dlg">
   <form class="dlg" method="dialog" id="taskForm">
     <div class="dlg-b">
-      <h2 id="tdT" style="font-size:20px;font-weight:600">Nueva tarea</h2>
-      <div class="field"><label for="tTitle">Qué hay que hacer</label><input id="tTitle" required maxlength="160" placeholder="p. ej., Enviar TC a la gestoría"></div>
-      <div class="field"><label for="tNota">Nota <span class="muted" style="font-weight:400">(opcional)</span></label><textarea id="tNota" rows="2" maxlength="1000" placeholder="Detalles, a quién afecta, enlaces…"></textarea></div>
+      <div class="seg tk-seg" id="tTipo" role="group" aria-label="Tipo"><span class="thumb"></span><button type="button" data-tipo="tarea" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Tarea</button><button type="button" data-tipo="recordatorio" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg>Recordatorio</button></div>
+      <h2 id="tdT" style="font-size:20px;font-weight:600;margin:14px 0 0">Nueva tarea</h2>
+      <div class="field"><label for="tTitle">Título</label><input id="tTitle" required maxlength="160" autocomplete="off"></div>
+      <div class="row2">
+        <div class="field tk-catbox" id="tCatBox"><label for="tCat">Categoría</label><select id="tCat"></select></div>
+        <div class="field"><label for="tDate" id="tDateLbl">Fecha límite</label><input type="date" id="tDate">
+          <div class="quick-dates"><button type="button" data-fecha-rapida="0">Hoy</button><button type="button" data-fecha-rapida="1">Mañana</button><button type="button" data-fecha-rapida="lunes">Lunes</button><button type="button" data-fecha-rapida="sin">Sin fecha</button></div></div>
+      </div>
       <div><span class="flabel">Importancia</span>
         <div class="prio-pick">
           <input type="radio" name="p" id="pA" value="alta"><label for="pA"><i class="prio alta"></i>Alta</label>
           <input type="radio" name="p" id="pM" value="media" checked><label for="pM"><i class="prio media"></i>Media</label>
           <input type="radio" name="p" id="pB" value="baja"><label for="pB"><i class="prio baja"></i>Baja</label>
         </div></div>
-      <div><span class="flabel">Estado</span>
-        <div class="prio-pick est-pick">
-          <input type="radio" name="e" id="eP" value="pendiente" checked><label for="eP"><i class="est pendiente"></i>Pendiente</label>
-          <input type="radio" name="e" id="eE" value="proceso"><label for="eE"><i class="est proceso"></i>En proceso</label>
-          <input type="radio" name="e" id="eT" value="terminado"><label for="eT"><i class="est terminado"></i>Terminado</label>
-        </div></div>
-      <div class="row2">
-        <div class="field"><label for="tDate">Fecha <span class="muted" style="font-weight:400">(opcional)</span></label><input type="date" id="tDate">
-          <div class="quick-dates"><button type="button" data-fecha-rapida="0">Hoy</button><button type="button" data-fecha-rapida="1">Mañana</button><button type="button" data-fecha-rapida="-1">Sin fecha</button></div></div>
-        <div class="field"><label for="tRep">Se repite</label><select id="tRep"><option value="">No</option><option value="semana">Cada semana</option><option value="mes">Cada mes</option><option value="anio">Cada año</option></select></div>
+      <div class="tk-opts">
+        <label class="check" id="tAvisoBox"><input type="checkbox" id="tAviso"> Avisar en el calendario</label>
+        <div class="field tk-inline" id="tAntBox" hidden><label for="tAnt">Aviso</label><select id="tAnt"></select></div>
+        <div class="field tk-inline"><label for="tRep">Se repite</label><select id="tRep"><option value="">No</option><option value="semana">Cada semana</option><option value="mes">Cada mes</option><option value="anio">Cada año</option></select></div>
+        <label class="check"><input type="checkbox" id="tFij"> Fijar (siempre a la vista)</label>
       </div>
+      <div id="tPersona"></div>
+      <div class="field"><label for="tNota">Notas <span class="muted" style="font-weight:400">(opcional)</span></label><textarea id="tNota" rows="2" maxlength="2000" placeholder="Detalles, a quién afecta, enlaces…"></textarea></div>
     </div>
-    <div class="dlg-f"><button class="btn ghost danger" value="del" id="tDel" formnovalidate hidden style="margin-right:auto">Eliminar</button><button class="btn ghost" value="cancel" formnovalidate>Cancelar</button><button class="btn" value="ok" id="tOk">Añadir tarea</button></div>
+    <div class="dlg-f"><button class="btn ghost" value="cancel" formnovalidate>Cancelar</button><button class="btn ghost" value="abrir">Crear y abrir</button><button class="btn" value="ok" id="tOk">Crear tarea</button></div>
   </form>
 </dialog>
 
@@ -133,6 +135,7 @@
 <script src="js/engines/nominas.js"></script>
 <script src="js/core/tareas.js"></script>
 <script src="js/core/empleados.js"></script>
+<script src="js/core/personas.js"></script>
 <script src="js/core/altas.js"></script>
 <script src="js/core/ausencias.js"></script>
 <script src="js/core/procesos.js"></script>
@@ -152,6 +155,7 @@
 <script src="js/modules/promociones.js"></script>
 <script src="js/modules/salidas.js"></script>
 <script src="js/modules/nominas.js"></script>
+<script src="js/modules/herramientas.js"></script>
 <script src="js/modules/secciones.js"></script>
 <script src="js/modules/salarios.js"></script>
 <script src="js/modules/permisos.js"></script>
