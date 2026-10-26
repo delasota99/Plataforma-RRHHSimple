@@ -252,7 +252,8 @@ window.RRHH_PARAMS = {
   ],
 
   /* REDUCCIÓN DE JORNADA por guarda legal (ET 37.6, en la redacción con efectos del 23/10/2026; convenio 14.1.h). */
-  reduccionJornada: { min: 1/8, max: 1/2, edadMenor: 12, fuente: 'ET 37.6 (efectos 23/10/2026: RDL 31/2026 y Ley 4/2026) · Convenio 14.1.h' },
+  reduccionJornada: { min: 1/8, max: 1/2, edadMenor: 12, minEnfermedadGrave: 1/2, verificado: '2026-10-26',
+    fuente: 'ET 37.6 en la redacción del RDL 31/2026, art. 7 (BOE 21/10/2026, efectos 23/10/2026; sustituye a la de la Ley 4/2026) · Convenio 14.1.h' },
 
   /* NACIMIENTO Y CUIDADO DEL MENOR (ET 48.4, 48.6 y 48 bis; RDL 9/2025, en vigor desde el 31/07/2025). */
   nacimiento: {
@@ -301,7 +302,7 @@ window.RRHH_PARAMS = {
       { id:'it', nombre:'Baja médica (IT)', color:'#b4532a', nomina:true, ausencia:true,
         subtipos:['Enfermedad común', 'Accidente no laboral', 'Accidente de trabajo', 'Enfermedad profesional'],
         acciones:['Comunicar la baja a la gestoría para la nómina', 'Aplicar el complemento de IT del convenio (art. 44)', 'Recibir el alta y confirmar la fecha de vuelta'],
-        nota:'Complemento del convenio (art. 44): contingencias comunes, 75 % los días 1-20 (o 1-3 si dura más de 30) y 100 % después; hospitalización, 100 % desde el primer día; accidente de trabajo o enfermedad profesional, 100 % desde el primer día. Sobre la base de cotización sin prorrata de pagas.' },
+        nota:'Complemento del convenio (art. 44): contingencias comunes, 75 % los días 1-20 (o 1-3 si dura más de 30) y 100 % después; hospitalización, 100 % desde el primer día; accidente de trabajo o enfermedad profesional, 100 % desde el primer día. Sobre la base de cotización sin prorrata de pagas. Desde el 01/12/2026, la base reguladora de la IT por contingencias comunes es la del mes anterior al previo a la baja (art. 171.2 LGSS, RDL 31/2026).' },
       { id:'nacimiento', nombre:'Nacimiento y cuidado del menor', color:'#6f8f2f', nomina:true, ausencia:true,
         subtipos:['Semanas obligatorias', 'Semanas voluntarias', 'Semanas hasta los 8 años', 'Lactancia acumulada'],
         acciones:['Comunicar a la gestoría la suspensión del contrato', 'Anotar las fechas de cada tramo', 'Confirmar la vuelta'],
@@ -376,7 +377,7 @@ window.RRHH_PARAMS = {
         madrid: {
           fuente: 'Decreto 82/2026, de 30 de septiembre (BOCM 01/10/2026)',
           dias: [['2027-01-01','Año Nuevo'],['2027-01-06','Epifanía del Señor'],['2027-03-19','San José'],['2027-03-25','Jueves Santo'],['2027-03-26','Viernes Santo'],['2027-05-01','Fiesta del Trabajo'],['2027-08-16','Asunción de la Virgen (trasladado)'],['2027-10-12','Fiesta Nacional de España'],['2027-11-01','Todos los Santos'],['2027-12-06','Día de la Constitución Española'],['2027-12-08','Inmaculada Concepción'],['2027-12-25','Natividad del Señor']],
-          local: { fuente: 'Pendiente de publicación', dias: [] }
+          local: { fuente: 'Pleno del Ayuntamiento de Madrid, septiembre de 2026 (pendiente de la relación definitiva en el BOCM)', dias: [['2027-05-15','San Isidro Labrador'],['2027-11-09','Nuestra Señora de la Almudena']] }
         },
         clm: {
           fuente: 'Decreto 34/2026, de 23 de junio (DOCM)',
@@ -384,9 +385,9 @@ window.RRHH_PARAMS = {
           local: { fuente: 'Pendiente de publicación', dias: [] }
         },
         cv: {
-          fuente: 'Acuerdo del Consell de marzo de 2026 (confirmar referencia en el DOGV)',
+          fuente: 'Decreto 42/2026, de 20 de marzo, del Consell (DOGV, marzo de 2026)',
           dias: [['2027-01-01','Año Nuevo'],['2027-01-06','Epifanía del Señor'],['2027-03-19','San José'],['2027-03-26','Viernes Santo'],['2027-03-29','Lunes de Pascua'],['2027-05-01','Fiesta del Trabajo'],['2027-10-09','Día de la Comunitat Valenciana'],['2027-10-12','Fiesta Nacional de España'],['2027-11-01','Todos los Santos'],['2027-12-06','Día de la Constitución Española'],['2027-12-08','Inmaculada Concepción'],['2027-12-25','Natividad del Señor']],
-          local: { fuente: 'Pendiente de publicación', dias: [] }
+          local: { fuente: 'Pleno del Ayuntamiento de València, julio de 2026', dias: [['2027-01-22','San Vicente Mártir'],['2027-04-05','San Vicente Ferrer']] }
         }
       }
     }

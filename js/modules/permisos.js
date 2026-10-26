@@ -13,7 +13,7 @@ const ModPermisos = (() => {
       </div>
       <section class="card red-card" style="margin-top:22px">
         <div class="card-h"><h3>Reducción de jornada por guarda legal</h3><span class="ex">ET 37.6 · Convenio 14.1.h</span></div>
-        <p class="muted" style="margin:0 0 14px">Cuidado directo de un menor de ${P.reduccionJornada.edadMenor} años, de una persona con discapacidad sin actividad retribuida o de un familiar hasta 2.º grado que no pueda valerse por sí mismo. Entre 1/8 y la mitad de la jornada, con reducción proporcional del salario.</p>
+        <p class="muted" style="margin:0 0 14px">Cuidado directo de un menor de ${P.reduccionJornada.edadMenor} años, de una persona con discapacidad sin actividad retribuida o del cónyuge, la pareja de hecho o un familiar hasta 2.º grado que no pueda valerse por sí mismo. Entre 1/8 y la mitad de la jornada, con reducción proporcional del salario.</p>
         <div class="red-grid">
           <form class="form" id="rF" autocomplete="off" onsubmit="return false">
             <div id="rEmp"></div>
@@ -24,7 +24,7 @@ const ModPermisos = (() => {
           </form>
           <div class="state-grid red-out" id="rOut"></div>
         </div>
-        <p class="muted small" style="margin:12px 0 0">Con efectos del 23/10/2026 el art. 37.6 ET cambia (RDL 31/2026 y Ley 4/2026), sobre todo en el cuidado de menores con cáncer o enfermedad grave y en el ejercicio simultáneo por dos personas. Revisa esos casos con el texto del BOE.</p>
+        <p class="muted small" style="margin:12px 0 0">Redacción vigente desde el 23/10/2026 (RDL 31/2026, que sustituye a la de la Ley 4/2026): se mantienen el menor de 12 años y la reducción entre 1/8 y la mitad; vuelve a incluir el cuidado del cónyuge o pareja de hecho; en menores con cáncer o enfermedad grave, al menos la mitad, y ambos progenitores pueden ejercerla a la vez. La empresa ya no puede limitar el ejercicio simultáneo de dos personas de la plantilla por el mismo sujeto causante.</p>
       </section>
     </div>`;
     $$('[data-perm]').forEach(b => b.onclick = () => {
