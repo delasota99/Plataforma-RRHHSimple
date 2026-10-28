@@ -18,6 +18,7 @@ const Datos = (() => {
       req.onupgradeneeded = () => { const d = req.result; d.createObjectStore('kv'); d.createObjectStore('sys'); };
       req.onsuccess = () => ok(req.result);
       req.onerror = () => ko(req.error);
+      req.onblocked = () => console.warn('El almacén de datos está bloqueado por otra pestaña de la plataforma');
     });
   }
   const tx = (store, modo, fn) => new Promise((ok, ko) => {
@@ -25,18 +26,21 @@ const Datos = (() => {
     t.oncomplete = () => ok(r && r.result); t.onerror = () => ko(t.error);
   });
 
+  /* Ninguna espera del arranque puede bloquear la plataforma: si algo del navegador no responde en unos segundos, se sigue sin ello. */
+  const conLimite = (p, ms, valor, que) => Promise.race([p, new Promise(ok => setTimeout(() => { console.warn(`Arranque: ${que} no responde; se continúa sin ello`); ok(valor); }, ms))]);
   async function init() {
     try {
-      db = await abrir();
-      await new Promise((ok, ko) => {
+      db = await conLimite(abrir(), 6000, null, 'el almacén de datos');
+      if (!db) throw new Error('El almacén de datos no responde');
+      await conLimite(new Promise((ok, ko) => {
         const t = db.transaction('kv', 'readonly'), s = t.objectStore('kv'), c = s.openCursor();
         c.onsuccess = () => { const cur = c.result; if (cur) { cache[cur.key] = cur.value; cur.continue(); } else ok(); };
         c.onerror = () => ko(c.error);
-      });
-      handle = await tx('sys', 'readonly', s => s.get('archivo')) || null;
+      }), 8000, null, 'la lectura de datos');
+      handle = await conLimite(tx('sys', 'readonly', s => s.get('archivo')), 3000, null, 'el archivo vinculado') || null;
     } catch (e) { fallo = true; console.warn('IndexedDB no disponible', e); }
-    try { persistente = await navigator.storage?.persisted?.() || await navigator.storage?.persist?.() || false; } catch (e) {}
-    if (handle) estadoArchivo = (await permiso(false)) ? 'activo' : 'sin-permiso';
+    try { persistente = await conLimite((async () => await navigator.storage?.persisted?.() || await navigator.storage?.persist?.() || false)(), 2000, false, 'el almacenamiento protegido'); } catch (e) {}
+    if (handle) estadoArchivo = (await conLimite(permiso(false), 2000, false, 'el permiso del archivo vinculado')) ? 'activo' : 'sin-permiso';
   }
 
   const get = (k, def) => (k in cache ? structuredClone(cache[k]) : def);
