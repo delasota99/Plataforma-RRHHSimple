@@ -108,11 +108,14 @@ const Shell = (() => {
   async function guardarCopia() {
     try {
       const r = await Datos.guardarCopia();
-      toast(r.modo === 'archivo' ? `Copia guardada en ${r.nombre}` : 'Copia descargada');
+      if (r.modo === 'archivo') toast(`Copia guardada en ${r.nombre}`);
+      else if (r.aviso) toast(r.aviso === 'no-escribe' ? 'No se pudo escribir en el archivo vinculado: se ha descargado la copia. Vuelve a vincularlo en Ajustes → Copias.' : 'Sin permiso para el archivo vinculado: se ha descargado la copia (mírala en Descargas).');
+      else toast('Copia descargada: la tienes en Descargas');
       Ficus.decir('Copia guardada. Ahora sí puedes derramar el café tranquilo.', 'yay');
-      if (ruta() === 'inicio' || ruta() === 'ajustes') render();
-    } catch (e) { toast('No se pudo guardar la copia'); }
+      pintarCopia(); if (ruta() === 'inicio' || ruta() === 'ajustes') render();
+    } catch (e) { console.warn(e); toast('No se pudo guardar la copia: ' + (e.message || e)); }
   }
+
 
   /* ---------- Tareas: al crear, editar o borrar se refresca la vista ---------- */
   function abrirTarea() { cerrarMenu(); Tareas.abrir(); }

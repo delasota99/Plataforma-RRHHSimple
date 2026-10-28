@@ -88,18 +88,28 @@ const Datos = (() => {
     if (!handle) return;
     clearTimeout(autoT);
     autoT = setTimeout(async () => {
-      if (await permiso(false)) { try { await escribir(); estadoArchivo = 'activo'; } catch (e) { estadoArchivo = 'sin-permiso'; } }
+      if (await conLimite(permiso(false), 3000, false, 'el permiso del archivo vinculado')) { try { await escribirConLimite(); estadoArchivo = 'activo'; } catch (e) { estadoArchivo = 'sin-permiso'; } }
       else estadoArchivo = 'sin-permiso';
       avisar();
     }, 1500);
   }
   const avisar = () => oyentes.forEach(fn => fn('_estado'));
 
-  /* Guardar copia (requiere un clic del usuario). */
+  /* Escritura en el archivo vinculado con límite de tiempo (si el archivo ya no existe o el navegador no responde, falla). */
+  const escribirConLimite = () => Promise.race([escribir(), new Promise((_, ko) => setTimeout(() => ko(new Error('El archivo vinculado no responde')), 8000))]);
+  /* Guardar copia (requiere un clic del usuario). Si el archivo vinculado no se puede usar, se descarga la copia igualmente. */
   async function guardarCopia() {
-    if (handle && await permiso(true)) { await escribir(); estadoArchivo = 'activo'; avisar(); return { modo: 'archivo', nombre: handle.name }; }
+    let aviso = '';
+    if (handle) {
+      const ok = await conLimite(permiso(true), 20000, false, 'el permiso del archivo vinculado');
+      if (ok) {
+        try { await escribirConLimite(); estadoArchivo = 'activo'; avisar(); return { modo: 'archivo', nombre: handle.name }; }
+        catch (e) { console.warn('No se pudo escribir en el archivo vinculado', e); aviso = 'no-escribe'; }
+      } else aviso = 'sin-permiso';
+      estadoArchivo = 'sin-permiso'; avisar();
+    }
     descargar(); set('_ultimaCopia', Date.now());
-    return { modo: 'descarga' };
+    return { modo: 'descarga', aviso };
   }
   function descargar() {
     const blob = new Blob([JSON.stringify(exportar(), null, 2)], { type: 'application/json' });
