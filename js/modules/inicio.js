@@ -9,6 +9,7 @@ const ModInicio = (() => {
     ausencias:  { nombre: 'Ausencias', desc: 'Quién falta hoy y quién vuelve pronto', span: 4 },
     procesos:   { nombre: 'Procesos en curso', desc: 'Vacantes, altas, periodos de prueba y salidas', span: 4 },
     plantilla:  { nombre: 'Plantilla de un vistazo', desc: 'Mujeres y hombres, incorporaciones y bajas del año', span: 4 },
+    cae:        { nombre: 'Empresas externas (CAE)', desc: 'Próximas visitas y su documentación', span: 5 },
     webs:       { nombre: 'Herramientas web', desc: 'netTime One, Remote, Vitaly, Claude… en una línea', span: 12 },
     altas:      { nombre: 'Altas en curso', desc: 'Estado de cada incorporación', span: 12 },
     festivos:   { nombre: 'Próximos festivos', desc: 'Los siguientes festivos de tus capas', span: 5 },
@@ -146,6 +147,12 @@ const ModInicio = (() => {
       <div class="rc-row">${l.length ? l.slice(0, MAX).map(chip).join('') + (l.length > MAX ? `<a class="rc-more" href="#tareas" data-ir-vista="recordatorios">+${l.length - MAX}</a>` : '') : '<span class="muted small">No hay recordatorios pendientes.</span>'}</div>
       <button class="icon-act" data-nuevo-rc aria-label="Nuevo recordatorio" title="Nuevo recordatorio"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>`;
   }
+  function bCae() {
+    if (!base()) return `<div class="card"><div class="card-h"><h3>Empresas externas</h3></div>${Empleados.configurado() ? bloqueado('Datos cifrados') : '<p class="muted">Crea la base de empleados para usarlo.</p>'}</div>`;
+    const lim = Fecha.iso(Fecha.hoy() + 14 * DAY), l = Cae.visitas().filter(v => !v.cerrada).map(v => ({ v, e: Cae.empresa(v.empresaId), est: Cae.estado(v) })).filter(x => x.est && !x.est.terminada && x.est.fecha <= lim).sort((a, b) => a.est.fecha.localeCompare(b.est.fecha));
+    return `<div class="card"><div class="card-h"><h3>Empresas externas</h3><a href="#cae">Ver</a></div>
+      ${l.length ? `<ul class="alta-list">${l.slice(0, 4).map(x => `<li data-cae-v="${x.v.id}"><span class="avatar">${icon('cae')}</span><span>${esc(x.e.nombre)}<span class="meta">${MotorCae.continuo(x.v) ? esc(MotorCae.textoFecha(x.v)) : Fecha.corta(Fecha.parse(x.est.fecha))} · ${x.est.trabajadores.length} persona${x.est.trabajadores.length === 1 ? '' : 's'}</span></span><span class="when${x.est.total ? ' block' : ''}">${x.est.total ? `${MotorCae.continuo(x.v) ? 'Pedir' : 'Faltan'} ${x.est.total}` : 'Al día'}</span></li>`).join('')}</ul>` : '<p class="muted" style="margin:0">Sin visitas en los próximos 14 días.</p>'}</div>`;
+  }
   function bWebs() {
     const l = Herramientas.todas();
     return `<div class="card rcb"><span class="rcb-h">${icon('herramientas')}<b>Herramientas</b></span>
@@ -223,7 +230,7 @@ const ModInicio = (() => {
   function bAccesos() {
     return `<div class="card"><div class="card-h"><h3>Accesos rápidos</h3></div>${Shell.SECCIONES.map(s => `<div class="tgroup">${esc(s.nombre)}</div><div class="tools">${s.items.map(([r, l], i) => `<a class="tool" href="#${r}" style="--i:${i}"><span class="ico">${icon(r, '')}</span><b>${esc(l)}</b></a>`).join('')}</div>`).join('')}</div>`;
   }
-  const PINTAR = { saludo: bSaludo, tickets: bTickets, calendario: bCalendario, recordatorios: bRecordatorios, webs: bWebs, ausencias: bAusencias, procesos: bProcesos, plantilla: bPlantilla, altas: bAltas, festivos: bFestivos, anio: bAnio, copia: bCopia, accesos: bAccesos };
+  const PINTAR = { saludo: bSaludo, tickets: bTickets, calendario: bCalendario, recordatorios: bRecordatorios, webs: bWebs, cae: bCae, ausencias: bAusencias, procesos: bProcesos, plantilla: bPlantilla, altas: bAltas, festivos: bFestivos, anio: bAnio, copia: bCopia, accesos: bAccesos };
 
   function render(main) {
     const L = layout(), ocultos = Object.keys(BLOQUES).filter(k => !L.includes(k));
@@ -256,6 +263,7 @@ const ModInicio = (() => {
       const iv = e.target.closest('[data-ir-vista]'); if (iv) { e.preventDefault(); ModTareas.irA(iv.dataset.irVista); return; }
       if (e.target.closest('[data-foco]')) { Tareas.unaAUna(Tareas.vista(rango()).filter(t => !t.hecha && t.tipo !== 'recordatorio').map(t => t.id), rango() === 'semana' ? 'Mi semana' : 'Este mes'); return; }
       const rg = e.target.closest('[data-rango]'); if (rg) { const bw = rg.closest('.w')?.dataset.w; Datos.set('_panelRango', rg.dataset.rango); semOff = 0; calVista = null; repintarBloque('tickets'); repintarBloque('calendario'); $(`.w[data-w="${bw}"] [data-rango="${rg.dataset.rango}"]`)?.focus(); return; }
+      const cv = e.target.closest('[data-cae-v]'); if (cv) { ModCae.abrirVisita(Number(cv.dataset.caeV)); return; }
       const al = e.target.closest('[data-alta]'); if (al) { ModAltas.abrir(Number(al.dataset.alta)); location.hash = '#altas'; return; }
       const ir = e.target.closest('[data-ir]'); if (ir) { ModCalendario.irA(ir.dataset.ir); return; }
       const wc = e.target.closest('[data-wc]'); if (wc) { const d = Number(wc.dataset.wc); semOff = d === 0 ? 0 : semOff + d; repintarBloque('calendario'); $(`[data-wc="${d}"]`)?.focus(); return; }

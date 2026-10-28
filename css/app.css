@@ -1495,3 +1495,74 @@ main:not([data-anim]) .hw{animation:none}
 .kcol.st-espera .kcol-h > i{background:transparent;border:2.5px dashed var(--s)}
 .tkp-tit{min-height:36px}
 @media (max-width:620px){.mc .card-h,.tkb .card-h{flex-wrap:wrap;row-gap:6px}.mc .card-h h3{flex-basis:100%}.mc .card-h .grow{display:none}.mc .card-h .mc-nav{margin-left:auto}}
+
+/* ================= PRL · Empresas externas (CAE) ================= */
+.note.ok{background:color-mix(in srgb,var(--ok) 12%,var(--surface));border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
+.seg3 .cnt{font-size:11px;padding:0 7px;border-radius:999px;background:var(--surface-3);color:var(--text);margin-left:2px}
+.cae-st{display:inline-flex;align-items:center;font-family:var(--font-d);font-size:11.5px;font-weight:500;padding:3px 9px;border-radius:999px;white-space:nowrap;background:var(--surface-2);color:var(--muted)}
+.cae-st.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--text)}
+.cae-st.falta{background:var(--danger-bg);color:var(--danger-text)}
+.cae-st.cad{background:color-mix(in srgb,var(--st-espera) 18%,transparent);color:var(--text)}
+.cae-list{display:flex;flex-direction:column;gap:8px}
+.cae-vis{display:flex;align-items:center;gap:14px;width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--surface);color:var(--text);text-align:left;box-shadow:var(--shadow);transition:border-color 160ms ease,transform 140ms var(--ease-out)}
+.cae-vis:active{transform:scale(.99)}
+@media (hover:hover) and (pointer:fine){.cae-vis:hover{border-color:var(--brand-2)}}
+.cae-vis.fin{opacity:.6}
+.cae-vis .cal{width:48px;height:52px;border-radius:12px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-d);line-height:1.1;flex:none}
+.cae-vis .cal small{font-size:10.5px;text-transform:uppercase;color:var(--muted)}
+.cae-vis .cal b{font-size:19px;font-weight:600}
+.cae-vis .cal.sem{background:color-mix(in srgb,var(--c-cv) 16%,var(--surface))}
+.cae-vis .cal.sem b{font-size:15px;text-transform:capitalize}
+.cae-vt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.cae-vt b{font-family:var(--font-d);font-weight:600;font-size:15.5px}
+.cae-vt small{font-size:13px;color:var(--muted)}
+.cae-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.cae-emp{display:flex;flex-direction:column;gap:12px;text-align:left;color:var(--text);cursor:pointer;transition:border-color 160ms ease,transform 160ms var(--ease-out)}
+@media (hover:hover) and (pointer:fine){.cae-emp:hover{border-color:var(--brand-2);transform:translateY(-2px)}}
+.cae-eh{display:flex;align-items:center;gap:12px}
+.cae-eh b{display:block;font-family:var(--font-d);font-size:16px;font-weight:600}
+.cae-eh small{color:var(--muted);font-size:13px}
+.cae-ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--c-cv) 16%,var(--surface-2));color:var(--text);flex:none}
+.cae-docs{display:flex;gap:5px;flex-wrap:wrap}
+.cae-d{font-family:var(--font-d);font-size:11.5px;padding:3px 8px;border-radius:8px;border:1px solid var(--line)}
+.cae-d.ok{background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.cae-d.falta{background:var(--danger-bg);color:var(--danger-text);border-color:transparent}
+.cae-d.cad{background:color-mix(in srgb,var(--st-espera) 18%,transparent)}
+.cae-ef{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+main[data-anim] :is(.cae-vis,.cae-emp){animation:enter 320ms var(--ease-out) both;animation-delay:calc(var(--i) * 40ms)}
+main:not([data-anim]) :is(.cae-vis,.cae-emp){animation:none}
+.cae-sec{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:14px;background:var(--bg);border:1px solid var(--line)}
+.cae-dt{display:flex;flex-direction:column;gap:6px}
+.cae-dr{display:grid;grid-template-columns:minmax(150px,1fr) 150px minmax(150px,auto) 110px;gap:8px;align-items:center}
+.cae-dn b{display:block;font-size:14px;font-weight:600;font-family:var(--font-d)}
+.cae-dn small{font-size:12px;color:var(--muted)}
+.cae-dr input[type=date],.cae-tt input[type=date],.cae-vence input{padding:6px 8px;border-radius:9px;border:1.5px solid var(--border-strong);background:var(--surface);font-size:13.5px}
+.cae-vence{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.cae-std{text-align:right}
+.cae-tt td{vertical-align:middle}
+.cae-tt td input{width:132px}
+.cae-mini{display:block;margin-top:3px}
+.cae-mini .cae-st{font-size:10.5px;padding:1px 7px}
+.cae-add{display:flex;gap:6px;flex-wrap:wrap}
+.cae-add input{flex:1;min-width:110px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border-strong);background:var(--surface);font-size:14px}
+.cae-sem{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.cae-sem[hidden]{display:none}
+.cae-ps{display:flex;flex-direction:column;gap:4px}
+.cae-ps .paso{width:100%}
+.cae-ps .paso .cae-st{margin-left:auto}
+.cae-mail .mail-body{max-height:260px;font-size:13.5px;padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);white-space:pre-wrap;overflow:auto}
+.cae-mail .doc-acts{align-items:center;flex-wrap:wrap}
+.cae-rec{grid-template-columns:1fr}
+.cae-rec li{display:flex;flex-direction:column;gap:3px}
+.cae-ruta{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:0 0 0 34px;color:var(--muted);font-size:12px;text-align:left;cursor:copy}
+.cae-ruta svg.i{width:14px;height:14px;flex:none}
+.cae-ruta code{font-size:11.5px;overflow-wrap:anywhere}
+@media (hover:hover) and (pointer:fine){.cae-ruta:hover{color:var(--text)}}
+@media (max-width:760px){.cae-dr{grid-template-columns:1fr 1fr}.cae-std{text-align:left}.cae-sem{grid-template-columns:1fr}.cae-vis{flex-wrap:wrap}.cae-vis .sc-go{display:none}}
+#cvFalta .note{animation:none}
+.cae-ruta-h{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.cae-ruta-h code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:11.5px}
+.cae-ruta-h .linkbtn{display:inline-flex;align-items:center;gap:5px;flex:none}
+.cae-ruta-h .linkbtn svg.i{width:15px;height:15px}
+.cae-cont{margin:-4px 0 0}
+.cae-ruta-h code,.cae-rec code{white-space:pre-wrap}

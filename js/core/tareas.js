@@ -181,7 +181,8 @@ const Tareas = (() => {
     docs: ['Alta', 'altas', t => { ModAltas.abrir(t.altaId); location.hash = '#altas'; }],
     reinc: ['Ausencia', 'ausencias', t => ModAusencias.abrir(t.ausenciaId)],
     prueba: ['Periodo de prueba', 'pruebas', t => ModPruebas.abrir(t.pruebaId)],
-    salida: ['Salida', 'salidas', () => { location.hash = '#salidas'; }]
+    salida: ['Salida', 'salidas', () => { location.hash = '#salidas'; }],
+    cae: ['Visita de empresa externa', 'cae', t => ModCae.abrirVisita(t.caeVisitaId)]
   };
   function detalle(id) {
     const t = buscar(id); if (!t) return;

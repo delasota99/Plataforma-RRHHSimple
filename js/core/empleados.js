@@ -25,8 +25,22 @@ const Empleados = (() => {
   }
   let guardando = false;
   async function guardar() { const c = await cifrar(lista); guardando = true; Datos.set(CLAVE, c); guardando = false; avisar(); }
-  /* Si el bloque cambia desde fuera (p. ej. al importar una copia), se vuelve a bloquear para releerlo. */
-  Datos.on(k => { if (k === CLAVE && !guardando && clave) bloquear(); });
+  /* Otros bloques cifrados con la misma contraseña (p. ej. trabajadores de empresas externas, CAE). */
+  const EXTRAS = new Set(), extras = new Map();
+  const registrarExtra = nombre => EXTRAS.add(nombre);
+  async function abrirExtra(nombre, k) {
+    const b = Datos.get(nombre); if (!b) return;
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(b.iv) }, k, deB64(b.datos));
+    extras.set(nombre, JSON.parse(new TextDecoder().decode(pt)));
+  }
+  async function guardarExtra(nombre, datos) {
+    if (!clave) throw new Error('La base de empleados está bloqueada');
+    extras.set(nombre, structuredClone(datos)); const c = await cifrar(datos);
+    guardando = true; Datos.set(nombre, c); guardando = false; avisar();
+  }
+  const extra = (nombre, defecto) => structuredClone(extras.has(nombre) ? extras.get(nombre) : defecto);
+  /* Si un bloque cifrado cambia desde fuera (p. ej. al importar una copia), se vuelve a bloquear para releerlo. */
+  Datos.on(k => { if ((k === CLAVE || EXTRAS.has(k)) && !guardando && clave) bloquear(); });
   function programarBloqueo() { clearTimeout(tBloqueo); if (clave) tBloqueo = setTimeout(() => { bloquear(); toast('Empleados bloqueados por inactividad'); }, INACTIVIDAD); }
   ['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, () => { if (clave) programarBloqueo(); }, { passive: true }));
 
@@ -41,15 +55,18 @@ const Empleados = (() => {
     try {
       const s = deB64(b.sal), k = await derivar(password, s);
       const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(b.iv) }, k, deB64(b.datos));
-      lista = JSON.parse(new TextDecoder().decode(pt)).map(limpiar); clave = k; sal = s;
+      lista = JSON.parse(new TextDecoder().decode(pt)).map(limpiar);
+      extras.clear(); for (const n of EXTRAS) await abrirExtra(n, k);
+      clave = k; sal = s;
       programarBloqueo(); avisar(); return true;
     } catch (e) { return false; }
   }
-  function bloquear() { clave = null; lista = []; clearTimeout(tBloqueo); avisar(); }
+  function bloquear() { clave = null; lista = []; extras.clear(); clearTimeout(tBloqueo); avisar(); }
   async function cambiarPassword(actual, nueva) {
     if (!(await desbloquear(actual))) throw new Error('La contraseña actual no es correcta');
     if (nueva.length < 8) throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
     sal = crypto.getRandomValues(new Uint8Array(16)); clave = await derivar(nueva, sal); await guardar();
+    for (const [n, d] of extras) await guardarExtra(n, d);   // los bloques extra, con la clave nueva
   }
 
   const nuevoId = () => Date.now() + Math.random();
@@ -69,6 +86,7 @@ const Empleados = (() => {
     todos: () => lista.map(e => MotorEmpleados.normalizar(structuredClone(e))),
     buscar: id => { const e = lista.find(x => x.id === id); return e ? MotorEmpleados.normalizar(structuredClone(e)) : null; },
     crearEmpleado, editarEmpleado, eliminarEmpleado, restaurar, importar, actualizarVarios,
+    registrarExtra, extra, guardarExtra,
     on: fn => (oyentes.add(fn), () => oyentes.delete(fn))
   };
 })();

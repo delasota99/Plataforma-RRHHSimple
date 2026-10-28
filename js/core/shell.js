@@ -3,17 +3,18 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.10 · tickets';
+  const VERSION = '0.11 · PRL y CAE';
   /* Secciones de la barra lateral (acordeón) y su página de resumen. */
   const SECCIONES = [
     { id: 'trabajo', nombre: 'Trabajo diario', desc: 'Tus tickets, documentos listos para enviar, el calendario y los accesos a las webs de trabajo.', items: [['tareas', 'Tareas'], ['documentos', 'Documentos'], ['calendario', 'Calendario'], ['herramientas', 'Herramientas']] },
     { id: 'personas', nombre: 'Personas', desc: 'La plantilla, sus ausencias y los informes de igualdad.', items: [['empleados', 'Empleados'], ['ausencias', 'Ausencias'], ['informes', 'Informes']] },
     { id: 'procesos', nombre: 'Procesos', desc: 'Del reclutamiento a la salida: cada etapa de la vida laboral, con sus pasos y avisos.', items: [['reclutamiento', 'Reclutamiento'], ['altas', 'Altas'], ['pruebas', 'Periodos de prueba'], ['promociones', 'Promociones'], ['salidas', 'Bajas y salidas'], ['nominas', 'Nóminas']] },
+    { id: 'prl', nombre: 'PRL', desc: 'Prevención de riesgos laborales: coordinación con empresas externas. Más adelante, reconocimientos médicos y formación de la plantilla.', items: [['cae', 'Empresas externas']] },
     { id: 'calculadoras', nombre: 'Calculadoras', desc: 'Cálculos del convenio y del Estatuto, con su base legal.', items: [['salarios', 'Salarios'], ['vacaciones', 'Vacaciones'], ['permisos', 'Permisos'], ['nacimiento', 'Nacimiento'], ['indemnizacion', 'Indemnización'], ['finiquito', 'Finiquito']] }
   ];
   const NAV = [['', [['inicio', 'Inicio']]], ...SECCIONES.map(x => [x.nombre, [[x.id, x.nombre], ...x.items]]), ['', [['ajustes', 'Ajustes']]]];
   const ETIQ = Object.fromEntries(NAV.flatMap(g => g[1]));
-  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, ausencias: ModAusencias, informes: ModInformes, reclutamiento: ModReclutamiento, pruebas: ModPruebas, promociones: ModPromociones, salidas: ModSalidas, nominas: ModNominas, tareas: ModTareas, herramientas: ModHerramientas, calendario: ModCalendario, vacaciones: ModVacaciones, documentos: ModDocumentos, salarios: ModSalarios, permisos: ModPermisos, nacimiento: ModNacimiento, indemnizacion: ModIndemnizacion, finiquito: ModFiniquito, ajustes: ModAjustes };
+  const MODULOS = { inicio: ModInicio, empleados: ModEmpleados, altas: ModAltas, ausencias: ModAusencias, informes: ModInformes, reclutamiento: ModReclutamiento, pruebas: ModPruebas, promociones: ModPromociones, salidas: ModSalidas, nominas: ModNominas, tareas: ModTareas, herramientas: ModHerramientas, cae: ModCae, calendario: ModCalendario, vacaciones: ModVacaciones, documentos: ModDocumentos, salarios: ModSalarios, permisos: ModPermisos, nacimiento: ModNacimiento, indemnizacion: ModIndemnizacion, finiquito: ModFiniquito, ajustes: ModAjustes };
   SECCIONES.forEach(x => { MODULOS[x.id] = { render: m => ModSecciones.render(m, x) }; });
   const FASE = {};
   const main = $('#main');
@@ -27,10 +28,11 @@ const Shell = (() => {
     n.altas = Altas.enCurso().filter(a => MotorAltas.estado(a) === 'bloqueada').length;
     n.ausencias = Ausencias.todas().filter(a => MotorAusencias.estado(a, hoyN) === 'sin-confirmar').length;
     n.pruebas = Procesos.Pruebas.todas().filter(p => MotorProcesos.estadoPrueba(p, hoyN) === 'sin-resolver').length;
+    n.cae = Cae.pendientes().length;
     n.salidas = Procesos.Salidas.todas().filter(x => MotorProcesos.estadoSalida(RRHH_PARAMS.procesos.salida, x, hoyN) === 'atrasada').length;
     return n;
   }
-  const TXT_AVISO = { tareas: 'vencidas', altas: 'bloqueadas', ausencias: 'sin confirmar', pruebas: 'sin resolver', salidas: 'atrasadas' };
+  const TXT_AVISO = { tareas: 'vencidas', altas: 'bloqueadas', ausencias: 'sin confirmar', pruebas: 'sin resolver', salidas: 'atrasadas', cae: 'visitas con documentación pendiente' };
   /* Sección abierta del acordeón (una cada vez; se recuerda). */
   let abierta = (() => { try { return localStorage.getItem('rrhh.nav'); } catch (e) { return null; } })();
   const guardarAbierta = () => { try { localStorage.setItem('rrhh.nav', abierta || ''); } catch (e) {} };
@@ -131,6 +133,7 @@ const Shell = (() => {
     { l: 'Nuevo recordatorio', h: 'Acción', run: () => { cerrarMenu(); Tareas.abrir({ tipo: 'recordatorio' }); } },
     { l: 'Revisar mis tickets una a una', h: 'Acción', run: () => Tareas.unaAUna(Tareas.vista('semana').filter(t => !t.hecha).map(t => t.id), 'Mi semana') },
     { l: 'Nueva alta', h: 'Acción', run: () => ModAltas.nueva(null) },
+    { l: 'Nueva visita de empresa externa (CAE)', h: 'Acción', run: () => { location.hash = '#cae'; setTimeout(() => $('#cNuevaV')?.click(), 120); } },
     { l: 'Nuevo empleado', h: 'Acción', run: () => { location.hash = '#empleados'; setTimeout(() => $('#nuevo')?.click(), 80); } },
     { l: 'Bloquear empleados', h: 'Acción', run: () => { Empleados.bloquear(); toast('Empleados bloqueados'); } },
     { l: 'Guardar copia de seguridad', h: 'Acción', run: guardarCopia },
@@ -191,7 +194,7 @@ const Shell = (() => {
     setTema(tema()); Ficus.init(); pintarCopia(); pintarNav(); render(); Ficus.saludar(); Tareas.comprobarAvisos();
     if (Datos.estado.fallo) toast('Este navegador no permite guardar datos: los cambios se perderán al cerrar.');
   }
-  Empleados.on(() => { pintarNav(); if (['empleados', 'vacaciones', 'ausencias', 'calendario', 'informes', 'pruebas', 'promociones', 'salidas', 'nominas'].includes(ruta()) && !document.querySelector('dialog[open]')) { const y = scrollY; render(); scrollTo(0, y); } });
+  Empleados.on(() => { pintarNav(); if (['empleados', 'vacaciones', 'ausencias', 'calendario', 'informes', 'pruebas', 'promociones', 'salidas', 'nominas', 'cae'].includes(ruta()) && !document.querySelector('dialog[open]')) { const y = scrollY; render(); scrollTo(0, y); } });
   return { VERSION, SECCIONES, avisos, etiqueta: r => ETIQ[r] || r, pintarNav, tema, setTema, arrancar, refrescar: () => render() };
 })();
 

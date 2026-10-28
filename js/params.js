@@ -296,6 +296,35 @@ window.RRHH_PARAMS = {
     { id:'claude',  nombre:'Claude',      desc:'Asistente de IA', url:'https://claude.ai/new', icono:'chispa', color:'#b5671b' }
   ],
 
+  /* COORDINACIÓN DE ACTIVIDADES EMPRESARIALES (CAE): empresas externas que trabajan en las instalaciones.
+     Base legal: art. 24 de la Ley 31/1995 de PRL y RD 171/2004. Proceso de la empresa (Fernando, 27/10/2026): solicitud CAE una vez
+     al año por empresa; Seguridad Social cada mes o trimestre (según la empresa); Hacienda cada año; trabajadores, cada año natural. */
+  cae: {
+    // Carpeta del servidor donde se archiva (dentro: carpeta de cada empresa y, dentro, el año). Se puede cambiar en la página.
+    carpetaBase: '\\\\liptosa-server\\USUARIOS\\eva.martinez\\Documents\\PDF\\PREVENCION RIESGOS LABORALES\\2021 OFICINA\\C-PRL-M-10  CAE (Coordinacion Atividades Empresariales) Trabajos Personal Externo\\C-PRL-M-10-01 EMPRESAS CAE',
+    renovarDias: 15,                 // servicios continuos: se pide lo del periodo siguiente con 15 días de antelación
+    docsEmpresa: [
+      { id:'ss',     nombre:'Justificante de estar al corriente de pago con la Seguridad Social', corto:'Seguridad Social', vigencia:'trimestre' },
+      { id:'hacienda', nombre:'Justificante de estar al corriente de pago con la Agencia Tributaria (Hacienda)', corto:'Hacienda', vigencia:'anio' },
+      { id:'rc',     nombre:'Copia de la póliza de responsabilidad civil', corto:'Póliza de RC', vigencia:'vence' },
+      { id:'fds',    nombre:'Fichas de datos de seguridad de los productos químicos que utilizan', corto:'Fichas de seguridad', vigencia:'anio', siProductos:true },
+      { id:'anexo2', nombre:'R-PRL-10-02 Anexo II · Análisis de riesgo de la actividad contratada (con fecha, firma y sello)', corto:'Anexo II', vigencia:'anio', anexo:true },
+      { id:'anexo3', nombre:'R-PRL-10-03 Anexo III · Solicitud de documentación a empresas (con fecha, firma y sello)', corto:'Anexo III', vigencia:'anio', anexo:true }
+    ],
+    docsTrabajador: [
+      { id:'formacion', nombre:'Certificado de formación en PRL para las tareas del puesto (entidad acreditada o técnico de PRL de la empresa)', corto:'Formación PRL', pide:'formación en PRL del puesto', vigencia:'anio' },
+      { id:'aptitud',   nombre:'Certificado de aptitud', corto:'Aptitud', pide:'certificado de aptitud', vigencia:'anio' },
+      { id:'epis',      nombre:"Entrega de EPI's y, cuando corresponda, certificado de revisión", corto:'EPI', pide:"entrega de EPI's (y revisión, si corresponde)", vigencia:'anio' }
+    ],
+    anexos: [
+      { nombre:'R-PRL-10-02 Anexo II Analisis de riesgo de la actividad contratada V5 6.pdf', url:'https://lipidostoledo-my.sharepoint.com/:b:/g/personal/lidia_sinde_liptosa_com/IQCmVF9G88PrRpid2Y_nUa1zAY-7CzIfUjtCGL3vLSFbYLg' },
+      { nombre:'R-PRL-10-03 Anexo III Solicitud de documentacion a empresas V5 5.pdf', url:'https://lipidostoledo-my.sharepoint.com/:b:/g/personal/lidia_sinde_liptosa_com/IQBN3FmdBbxNQpr3zaZ7RBxdAbOmN8piw_cG4jeNqfNxlj4' }
+    ],
+    servicios: ['Limpieza', 'Mantenimiento', 'Jardinería', 'Control de plagas', 'Obras y reformas', 'Transporte', 'Informática', 'Otro'],
+    avisoDias: 2,
+    fuente: 'Ley 31/1995 de PRL, art. 24 · RD 171/2004 (coordinación de actividades empresariales)'
+  },
+
   ausencias: {
     avisoDias: 5,                    // tarea automática de reincorporación, días antes de la vuelta prevista
     tipos: [
