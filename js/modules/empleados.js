@@ -153,6 +153,7 @@ const ModEmpleados = (() => {
         <div class="row2"><div class="field"><label for="fAp1">Primer apellido</label><input id="fAp1" value="${esc(e.apellido1)}" required autocomplete="off"></div>
           <div class="field"><label for="fAp2">Segundo apellido <span class="muted" style="font-weight:400">(opcional)</span></label><input id="fAp2" value="${esc(e.apellido2)}" autocomplete="off"></div></div>
         <div class="field"><span class="flabel">Sexo <span class="muted" style="font-weight:400">(para los informes de igualdad)</span></span><div class="seg" id="fSexo" role="radiogroup"><span class="thumb" style="${e.sexo ? (e.sexo === 'hombre' ? 'transform:translateX(100%)' : '') : 'opacity:0'}"></span><button type="button" role="radio" data-sx="mujer" aria-pressed="${e.sexo === 'mujer'}" aria-checked="${e.sexo === 'mujer'}">Mujer</button><button type="button" role="radio" data-sx="hombre" aria-pressed="${e.sexo === 'hombre'}" aria-checked="${e.sexo === 'hombre'}">Hombre</button></div></div>
+        <div class="field"><label for="fMail">Correo electrónico <span class="muted" style="font-weight:400">(para avisos como el reconocimiento médico)</span></label><input id="fMail" type="email" value="${esc(e.email || '')}" autocomplete="off" placeholder="nombre.apellido@liptosa.com"></div>
         <div class="row2"><div class="field"><label for="fDepI">Departamento</label><select id="fDepI"><option value="">Sin indicar</option>${deps.map(x => `<option ${e.departamento === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
           <div class="field"><label for="fRespI">Responsable</label><input id="fRespI" list="dlResp" value="${esc(e.responsable)}">${dl('dlResp', 'responsable')}</div></div>
         <div class="row2"><div class="field"><label for="fCen">Centro</label><select id="fCen">${P.centros.map(c => `<option ${e.centro === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}${e.centro && !P.centros.includes(e.centro) ? `<option selected>${esc(e.centro)}</option>` : ''}</select></div>
@@ -180,7 +181,7 @@ const ModEmpleados = (() => {
       ev.preventDefault();
       const sal = MotorEmpleados.importe($('#fSal', d).value);
       const nuevo = { codigo: $('#fCod', d).value.trim(), nombre: $('#fNom', d).value.trim(), apellido1: $('#fAp1', d).value.trim(), apellido2: $('#fAp2', d).value.trim(), departamento: $('#fDepI', d).value, responsable: $('#fRespI', d).value.trim(),
-        centro: $('#fCen', d).value, puesto: $('#fPue', d).value.trim(), fechaContratacion: $('#fFc', d).value, salario: sal === null ? NaN : sal, fechaBaja: $('#fFb', d).value, sexo, motivoBaja: $('#fFb', d).value ? $('#fMot', d).value : '',
+        centro: $('#fCen', d).value, puesto: $('#fPue', d).value.trim(), fechaContratacion: $('#fFc', d).value, salario: sal === null ? NaN : sal, fechaBaja: $('#fFb', d).value, sexo, motivoBaja: $('#fFb', d).value ? $('#fMot', d).value : '', email: $('#fMail', d).value.trim().toLowerCase(),
         vacaciones: { ...(e.vacaciones || {}), ...($('#fVac', d).value !== '' ? { [y]: Math.max(0, Math.floor(Number($('#fVac', d).value))) } : {}) } };
       const err = MotorEmpleados.validar({ ...nuevo, id }, Empleados.todos());
       if (Number.isNaN(nuevo.salario)) err.push('Salario no válido');
@@ -202,7 +203,7 @@ const ModEmpleados = (() => {
 
   function previsualizarImport(texto, main) {
     const r = MotorEmpleados.importarCSV(texto, Empleados.todos(), { departamentos: P.departamentos });
-    const ETQ = { nombre: 'nombre', apellido1: '1.er apellido', apellido2: '2.º apellido', sexo: 'sexo', departamento: 'departamento', responsable: 'responsable', centro: 'centro', puesto: 'puesto', fechaContratacion: 'contratación', salario: 'salario', fechaBaja: 'fecha de baja', motivoBaja: 'motivo de baja' };
+    const ETQ = { nombre: 'nombre', apellido1: '1.er apellido', apellido2: '2.º apellido', sexo: 'sexo', departamento: 'departamento', responsable: 'responsable', centro: 'centro', puesto: 'puesto', fechaContratacion: 'contratación', salario: 'salario', fechaBaja: 'fecha de baja', motivoBaja: 'motivo de baja', email: 'correo' };
     const val = (k, v) => k === 'sexo' ? MotorEmpleados.SEXO[v] : k === 'salario' ? euros(v) : /^fecha/.test(k) ? Fecha.larga(Fecha.parse(v)) : v;
     const total = r.empleados.length + r.actualizaciones.length;
     const d = abrirModal(`<div class="dlg-b"><h2 style="font-size:20px;font-weight:600">Importar empleados</h2>

@@ -296,6 +296,26 @@ window.RRHH_PARAMS = {
     { id:'claude',  nombre:'Claude',      desc:'Asistente de IA', url:'https://claude.ai/new', icono:'chispa', color:'#b5671b' }
   ],
 
+  /* RECONOCIMIENTOS MÉDICOS (vigilancia de la salud, art. 22 Ley 31/1995 de PRL: voluntaria salvo excepciones legales).
+     Campaña anual para el personal de oficina (también quien trabaja en remoto, que figura en Oficina). Fernando, 28/10/2026.
+     Solo se guarda el estado y las fechas (cifrado con la base de empleados); nunca resultados ni datos de salud.
+     Los textos y los lugares se pueden cambiar en la propia página. */
+  reconocimientos: {
+    centros: ['Oficina (Madrid)'],
+    respuestaDias: 7,                // ticket si alguien no ha respondido a los 7 días de comunicarlo
+    lugares: [],                     // se rellenan desde la página (nombre, dirección e indicaciones)
+    correoComunicacion: {
+      asunto: 'Reconocimiento médico {anio}',
+      texto: 'Hola, {nombre}:\n\nComo cada año, {empresa} ofrece a su plantilla el reconocimiento médico de vigilancia de la salud correspondiente a {anio}, a través de nuestro servicio de prevención.\n\nEl reconocimiento es voluntario (art. 22 de la Ley 31/1995 de Prevención de Riesgos Laborales). Por favor, responde a este correo indicando si quieres hacerlo o si renuncias a él. Si lo aceptas, te enviaré la fecha, la hora y el lugar de tu cita.\n\nLos resultados son confidenciales: la empresa solo recibe la conclusión de aptitud para el puesto.\n\nUn saludo,\n{firma}'
+    },
+    correoCita: {
+      asunto: 'Tu cita para el reconocimiento médico {anio}',
+      texto: 'Hola, {nombre}:\n\nTe confirmo tu cita para el reconocimiento médico de {anio}:\n\n• Fecha: {fecha}\n• Hora: {hora}\n• Lugar: {lugar}\n• Dirección: {direccion}\n{indicaciones}\nSi no puedes acudir, avísame lo antes posible para buscar otra fecha.\n\nUn saludo,\n{firma}'
+    },
+    renuncia: 'RENUNCIA AL RECONOCIMIENTO MÉDICO {anio}\n\nD./D.ª {nombreCompleto}, con código de empleado {codigo} y puesto {puesto}, ha sido informado/a por {empresa} de su derecho a la vigilancia periódica de su estado de salud correspondiente al año {anio}, de carácter voluntario conforme al artículo 22 de la Ley 31/1995, de 8 de noviembre, de Prevención de Riesgos Laborales, y manifiesta su decisión de NO realizar el reconocimiento médico ofrecido.\n\nEsta renuncia se refiere únicamente al reconocimiento de {anio} y puede revocarse en cualquier momento comunicándolo a la empresa.\n\nEn {ciudad}, a {hoy}.\n\n\nFirma de la persona trabajadora:\n\n\n\nRecibido por la empresa:',
+    fuente: 'Ley 31/1995 de PRL, art. 22 (vigilancia de la salud: voluntaria salvo los supuestos del art. 22.1; confidencial, la empresa solo conoce la aptitud)'
+  },
+
   /* COORDINACIÓN DE ACTIVIDADES EMPRESARIALES (CAE): empresas externas que trabajan en las instalaciones.
      Base legal: art. 24 de la Ley 31/1995 de PRL y RD 171/2004. Proceso de la empresa (Fernando, 27/10/2026): solicitud CAE una vez
      al año por empresa; Seguridad Social cada mes o trimestre (según la empresa); Hacienda cada año; trabajadores, cada año natural. */

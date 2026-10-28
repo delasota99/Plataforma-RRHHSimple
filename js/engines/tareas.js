@@ -20,7 +20,7 @@
   const ESTADOS = ['pendiente', 'proceso', 'espera', 'terminado'];
   const PRIO = { alta: 0, media: 1, baja: 2 };
   /* Categoría por defecto de las tareas automáticas. */
-  const CAT_AUTO = { docs: 'contratacion', prueba: 'prueba', promocion: 'cambios', reinc: 'ausencias', salida: 'bajas', cae: 'prl' };
+  const CAT_AUTO = { docs: 'contratacion', prueba: 'prueba', promocion: 'cambios', reinc: 'ausencias', salida: 'bajas', cae: 'prl', rm: 'prl' };
 
   /* Siguiente estado (botón "avanzar"): Por hacer → En curso → Hecha → Por hacer; En espera → En curso.
      Recordatorio: pendiente ⇄ terminado. */
