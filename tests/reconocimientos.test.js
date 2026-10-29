@@ -21,8 +21,12 @@ const E = [
   { id: 5, codigo: 'E-05', nombre: 'Rosa', nombreCompleto: 'Rosa Prueba Cinco', centro: 'Fábrica (Talavera)', fechaContratacion: '2015-01-01', reconocimientos: { 2027: { comunicado: '2027-02-01' } } }
 ];
 const ids = l => l.map(e => e.id).join();
-ok('Campaña 2027: oficina de alta en el año + quien ya tiene registro', ids(M.participantes(E, 2027, C.centros)) === '1,4,5');
-ok('Campaña 2026: incluye a quien causó baja durante el año', ids(M.participantes(E, 2026, C.centros)) === '1,3');
+ok('Campaña 2027: oficina de alta + quien ya tiene registro', ids(M.participantes(E, 2027, C.centros, '2027-03-01')) === '1,4,5');
+ok('Campaña en curso: NO incluye a quien ya ha causado baja', ids(M.participantes(E, 2026, C.centros, '2026-10-29')) === '1');
+ok('Campaña pasada: a fecha 31/12', ids(M.participantes(E, 2026, C.centros, '2027-02-01')) === '1');
+ok('Baja futura (aún de alta hoy): sí entra', ids(M.participantes([{ ...E[2], fechaBaja: '2026-12-15' }], 2026, C.centros, '2026-10-29')) === '3');
+ok('Centro reconocido sin importar cómo se escribió', M.esOficina('OFICINA MADRID') && M.esOficina('Oficina (Madrid)') && !M.esOficina('Fábrica (Talavera)'));
+ok('Centros con función (p. ej. "Oficina" a secas)', ids(M.participantes([{ ...E[0], centro: 'Oficina' }], 2026, e => M.esOficina(e.centro), '2026-10-29')) === '1');
 
 /* Resumen y seguimiento */
 const L = [
@@ -37,6 +41,8 @@ const L = [
   { id: 9 }
 ];
 const r = M.resumen(L, 2027);
+ok('Comunicación masiva: la fecha de la campaña vale para todos', M.estado({}, '2027-02-01') === 'comunicado' && M.resumen([{ id: 1 }, { id: 2 }], 2027, '2027-02-01').comunicado === 2);
+ok('Sin respuesta tras 7 días con la fecha de la campaña', M.seguimiento([{ id: 1 }], 2027, '2027-02-09', 7, '2027-02-01').sinResp.length === 1);
 ok('Resumen por estados', r.pendiente === 1 && r.comunicado === 2 && r.acepta === 1 && r.citado === 3 && r.rechaza === 1 && r.realizado === 1 && r.total === 9);
 ok('Cerrados = realizados + rechazos', r.cerrados === 2);
 const s = M.seguimiento(L, 2027, '2027-02-10', C.respuestaDias);

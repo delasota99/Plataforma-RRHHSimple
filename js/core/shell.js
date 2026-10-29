@@ -3,7 +3,7 @@
  * botón de copia y menú móvil. Arranca la plataforma.
  */
 const Shell = (() => {
-  const VERSION = '0.12 · reconocimientos médicos';
+  const VERSION = '0.12.1 · reconocimientos: comunicación masiva';
   /* Secciones de la barra lateral (acordeón) y su página de resumen. */
   const SECCIONES = [
     { id: 'trabajo', nombre: 'Trabajo diario', desc: 'Tus tickets, documentos listos para enviar, el calendario y los accesos a las webs de trabajo.', items: [['tareas', 'Tareas'], ['documentos', 'Documentos'], ['calendario', 'Calendario'], ['herramientas', 'Herramientas']] },

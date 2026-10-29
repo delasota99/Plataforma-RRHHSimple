@@ -1,7 +1,8 @@
 /*
  * Motor de reconocimientos médicos (campaña anual) — funciones puras.
+ * La comunicación es masiva: una fecha por campaña (comunicado), que vale para todas las personas.
  * Registro por persona y año (dentro de la ficha cifrada): empleado.reconocimientos[anio] =
- *   { comunicado: 'AAAA-MM-DD', respuesta: 'acepta'|'rechaza'|'', respuestaEl, renunciaFirmada,
+ *   { comunicado: 'AAAA-MM-DD' (solo si se comunicó aparte), respuesta: 'acepta'|'rechaza'|'', respuestaEl, renunciaFirmada,
  *     cita: { fecha, hora, lugarId }, citaEnviada: 'AAAA-MM-DD', realizado: 'AAAA-MM-DD' }
  * Nunca se guardan resultados ni datos de salud.
  * Base legal: art. 22 de la Ley 31/1995 de PRL (voluntaria; confidencial; la empresa solo conoce la aptitud).
@@ -14,9 +15,9 @@
   const DAY = 86400000;
   const parse = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); };
 
-  /* Estado de una persona en la campaña (a partir de su registro del año). */
-  function estado(r) {
-    r = r || {};
+  /* Estado de una persona en la campaña (a partir de su registro del año y la fecha de comunicación de la campaña). */
+  function estado(r, comunicado = '') {
+    r = { ...(r || {}) }; if (!r.comunicado && comunicado) r.comunicado = comunicado;
     if (r.realizado) return 'realizado';
     if (r.respuesta === 'rechaza') return 'rechaza';
     if (r.cita && r.cita.fecha) return 'citado';
@@ -25,18 +26,22 @@
     return 'pendiente';
   }
 
-  /* Quién entra en la campaña: personas de alta en algún momento del año, en los centros indicados
-     (oficina; quien teletrabaja figura en Oficina). Quien tenga ya registro ese año se mantiene aunque cambie. */
-  function participantes(empleados, anio, centros) {
-    const ini = `${anio}-01-01`, fin = `${anio}-12-31`;
+  /* Quién entra en la campaña: personas de los centros elegidos (oficina; quien teletrabaja figura en Oficina) que siguen
+     de alta (a la fecha de referencia: hoy, o el 31/12 si la campaña ya terminó). Quien tenga registro ese año se mantiene.
+     "incluye" puede ser una lista de centros o una función (empleado → sí/no). */
+  function participantes(empleados, anio, incluye, hoy = `${anio}-01-01`) {
+    const fin = `${anio}-12-31`, ref = hoy < fin ? (hoy > `${anio}-01-01` ? hoy : `${anio}-01-01`) : fin;
+    const enCentro = typeof incluye === 'function' ? incluye : e => incluye.includes(e.centro);
     return empleados.filter(e => (e.reconocimientos && e.reconocimientos[anio]) ||
-      (centros.includes(e.centro) && (!e.fechaContratacion || e.fechaContratacion <= fin) && (!e.fechaBaja || e.fechaBaja >= ini)));
+      (enCentro(e) && (!e.fechaContratacion || e.fechaContratacion <= fin) && (!e.fechaBaja || e.fechaBaja >= ref)));
   }
+  /* Centro de oficina por defecto: el que contiene "oficina" (sin tildes ni mayúsculas). */
+  const esOficina = centro => /oficina/.test(String(centro || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
 
   /* Recuento por estado. */
-  function resumen(lista, anio) {
+  function resumen(lista, anio, comunicado = '') {
     const n = Object.fromEntries(ESTADOS.map(k => [k, 0]));
-    lista.forEach(e => n[estado(e.reconocimientos?.[anio])]++);
+    lista.forEach(e => n[estado(e.reconocimientos?.[anio], comunicado)]++);
     const total = lista.length, cerrados = n.realizado + n.rechaza;
     return { ...n, total, cerrados, pct: total ? cerrados / total : 0 };
   }
@@ -72,11 +77,11 @@
 
   /* Pendientes para el seguimiento: sin respuesta pasados "dias" desde la comunicación, aceptados sin cita
      y citas ya pasadas sin marcar como realizadas. */
-  function seguimiento(lista, anio, hoy, dias) {
+  function seguimiento(lista, anio, hoy, dias, comunicado = '') {
     const sinResp = [], porCitar = [], porConfirmar = [], proximas = [];
     lista.forEach(e => {
-      const r = e.reconocimientos?.[anio] || {}, st = estado(r);
-      if (st === 'comunicado' && (parse(hoy) - parse(r.comunicado)) / DAY >= dias) sinResp.push(e);
+      const r = e.reconocimientos?.[anio] || {}, st = estado(r, comunicado), com = r.comunicado || comunicado;
+      if (st === 'comunicado' && (parse(hoy) - parse(com)) / DAY >= dias) sinResp.push(e);
       if (st === 'acepta') porCitar.push(e);
       if (st === 'citado' && r.cita.fecha < hoy) porConfirmar.push(e);
       if (st === 'citado' && r.cita.fecha >= hoy) proximas.push(e);
@@ -92,7 +97,7 @@
     return out;
   }
 
-  const api = { ESTADOS, NOMBRE, estado, participantes, resumen, rellenar, correoCita, correoComunicacion, renuncia, mailto, seguimiento, solapes, f };
+  const api = { ESTADOS, NOMBRE, estado, participantes, esOficina, resumen, rellenar, correoCita, correoComunicacion, renuncia, mailto, seguimiento, solapes, f };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.MotorReconocimientos = api;
 })(typeof window !== 'undefined' ? window : globalThis);

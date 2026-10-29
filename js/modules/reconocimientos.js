@@ -1,6 +1,8 @@
 /*
  * PRL → Reconocimientos médicos: campaña anual para el personal de oficina (quien teletrabaja figura en Oficina).
- * Flujo por persona: Por comunicar → Comunicado → Acepta / Rechaza → Citado (fecha, hora, lugar) → Realizado.
+ * La comunicación es masiva: una fecha por campaña (Datos 'rmCampanas'), que vale para todo el personal.
+ * Flujo por persona: Por comunicar → Sin respuesta → Acepta / Rechaza → Citado (fecha, hora, lugar) → Realizado.
+ * Centros incluidos: por defecto los que contienen «Oficina»; se pueden elegir en la página (Datos 'rmCentros').
  * Datos: dentro de la ficha cifrada (empleado.reconocimientos[año]); solo estado y fechas, nunca datos de salud.
  * Lugares y textos de los correos: editables en la página (Datos 'rmLugares' y 'rmTextos').
  * Motor: js/engines/reconocimientos.js
@@ -20,8 +22,14 @@ const ModReconocimientos = (() => {
   const cfg = () => ({ ...P.reconocimientos, ...Datos.get('rmTextos', {}) });
 
   /* ---------- Datos de la campaña ---------- */
-  const lista = () => abierta() ? M().participantes(Empleados.todos(), anio, P.reconocimientos.centros).sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto, 'es')) : [];
-  const reg = e => (e.reconocimientos || {})[anio] || {};
+  const campana = (a = anio) => Datos.get('rmCampanas', {})[a] || {};
+  const setCampana = (cambios, a = anio) => { const c = Datos.get('rmCampanas', {}); c[a] = { ...(c[a] || {}), ...cambios }; Datos.set('rmCampanas', c); };
+  const centrosElegidos = () => Datos.get('rmCentros', null);
+  const incluye = e => { const s = centrosElegidos(); return s ? s.includes(e.centro) : (M().esOficina(e.centro) || P.reconocimientos.centros.includes(e.centro)); };
+  const participantesDe = a => M().participantes(Empleados.todos(), a, incluye, hoyISO());
+  const lista = () => abierta() ? participantesDe(anio).sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto, 'es')) : [];
+  /* Registro de la persona con la fecha de comunicación de la campaña si no tiene una propia. */
+  const reg = e => { const r = (e.reconocimientos || {})[anio] || {}; return { ...r, comunicado: r.comunicado || campana().comunicado || '' }; };
   async function guardar(id, cambios, a = anio) {
     const e = Empleados.buscar(id); if (!e) return;
     const todos = { ...(e.reconocimientos || {}) }; todos[a] = { ...(todos[a] || {}), ...cambios };
@@ -34,7 +42,7 @@ const ModReconocimientos = (() => {
     if (!abierta() || typeof Tareas === 'undefined') return;
     const y = new Date().getFullYear();
     [y - 1, y, y + 1].forEach(a => {
-      const l = M().participantes(Empleados.todos(), a, P.reconocimientos.centros), s = M().seguimiento(l, a, hoyISO(), P.reconocimientos.respuestaDias);
+      const l = participantesDe(a), s = M().seguimiento(l, a, hoyISO(), P.reconocimientos.respuestaDias, campana(a).comunicado || '');
       const t = Tareas.todas().find(x => x.auto === 'rm' && x.rmAnio === a);
       const partes = [s.sinResp.length && `${s.sinResp.length} sin responder`, s.porCitar.length && `${s.porCitar.length} por citar`, s.porConfirmar.length && `${s.porConfirmar.length} por confirmar si ha ido`].filter(Boolean);
       if (partes.length) {
@@ -47,7 +55,7 @@ const ModReconocimientos = (() => {
   /* Avisos para la barra lateral (campaña del año en curso). */
   function avisos() {
     if (!abierta()) return 0;
-    const y = new Date().getFullYear(), s = M().seguimiento(M().participantes(Empleados.todos(), y, P.reconocimientos.centros), y, hoyISO(), P.reconocimientos.respuestaDias);
+    const y = new Date().getFullYear(), s = M().seguimiento(participantesDe(y), y, hoyISO(), P.reconocimientos.respuestaDias, campana(y).comunicado || '');
     return s.sinResp.length + s.porCitar.length + s.porConfirmar.length;
   }
   Empleados.on(() => { if (abierta()) sincronizar(); });
@@ -60,14 +68,16 @@ const ModReconocimientos = (() => {
   function render(main) {
     if (!abierta()) return pantallaBloqueo(main, 'Reconocimientos médicos', 'Campaña anual de reconocimientos del personal de oficina: comunicación, respuesta, cita y seguimiento.', () => render(main));
     sincronizar();
-    const l = lista(), r = M().resumen(l, anio), s = M().seguimiento(l, anio, hoyISO(), P.reconocimientos.respuestaDias), sol = M().solapes(l, anio);
-    const pendCom = l.filter(e => M().estado(reg(e)) === 'pendiente');
+    const com = campana().comunicado || '', l = lista(), r = M().resumen(l, anio, com), s = M().seguimiento(l, anio, hoyISO(), P.reconocimientos.respuestaDias, com), sol = M().solapes(l, anio);
+    const todosCentros = MotorEmpleados.valores(Empleados.todos().filter(e => !e.fechaBaja || e.fechaBaja >= hoyISO()), 'centro');
+    const nCentro = c => Empleados.todos().filter(e => e.centro === c && (!e.fechaBaja || e.fechaBaja >= hoyISO())).length;
     const F = [['', 'Todos', r.total], ...M().ESTADOS.map(k => [k, M().NOMBRE[k], r[k]])];
     const vis = l.filter(e => (!filtro || M().estado(reg(e)) === filtro) && (!q || norm(`${e.codigo} ${e.nombreCompleto} ${e.departamento || ''} ${e.puesto || ''}`).includes(norm(q))));
     main.innerHTML = `<div class="view">
       <div class="page-h page-h-row"><div><a class="crumb" href="#prl">← PRL</a><h1>Reconocimientos médicos</h1><p>Campaña anual del personal de oficina (también quien teletrabaja): comunicar, recoger la respuesta, citar y confirmar que se ha hecho.</p></div>
-        <div class="page-acts"><button class="btn" id="rmCom" ${pendCom.length ? '' : 'disabled'}><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM4 6l8 6 8-6"/></svg>Comunicar${pendCom.length ? ` (${pendCom.length})` : ''}</button></div></div>
-      <div class="nom-bar"><div class="nom-mes"><button class="icon-btn" data-y="-1" aria-label="Año anterior"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><h2>Campaña ${anio}</h2><button class="icon-btn" data-y="1" aria-label="Año siguiente"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div></div>
+        <div class="page-acts"><button class="btn ${com ? 'ghost' : ''}" id="rmCom" ${l.length ? '' : 'disabled'}><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM4 6l8 6 8-6"/></svg>${com ? `Comunicada el ${Fecha.corta(Fecha.parse(com))}` : 'Comunicar la campaña'}</button></div></div>
+      <div class="nom-bar"><div class="nom-mes"><button class="icon-btn" data-y="-1" aria-label="Año anterior"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><h2>Campaña ${anio}</h2><button class="icon-btn" data-y="1" aria-label="Año siguiente"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div>
+        <div class="rm-centros" role="group" aria-label="Centros incluidos"><span class="muted small">Personal de:</span>${todosCentros.map(c => `<button class="chip-f" data-centro="${esc(c)}" aria-pressed="${incluye({ centro: c })}">${esc(c)} <b>${nCentro(c)}</b></button>`).join('') || '<span class="muted small">No hay centros en la base de empleados</span>'}</div></div>
       ${l.length ? `<div class="card rm-res">
         <div class="rm-bar" role="img" aria-label="${r.cerrados} de ${r.total} cerrados">${M().ESTADOS.filter(k => r[k]).map(k => `<i style="flex:${r[k]};--rc:${COLOR[k]}" title="${M().NOMBRE[k]}: ${r[k]}"></i>`).join('')}</div>
         <div class="rm-ley">${M().ESTADOS.map(k => `<span style="--rc:${COLOR[k]}"><i></i>${M().NOMBRE[k]} <b>${r[k]}</b></span>`).join('')}<span class="rm-tot"><b>${r.cerrados}</b> de ${r.total} cerrados</span></div>
@@ -76,7 +86,7 @@ const ModReconocimientos = (() => {
       ${s.proximas.length ? `<div class="card rm-agenda"><div class="card-h"><h3>Próximas citas</h3><span class="ex">${s.proximas.length}</span></div><ul>${s.proximas.slice(0, 6).map(e => { const c = reg(e).cita; return `<li><span class="rc-d"><b>${Number(c.fecha.slice(8))}</b><small>${Fecha.mesCorto(Fecha.parse(c.fecha))}</small></span><span><b>${esc(e.nombreCompleto)}</b><small>${c.hora ? c.hora + ' h · ' : ''}${esc(lugar(c.lugarId)?.nombre || 'Lugar sin indicar')}${sol.has(e.id) ? ' · <em class="late-txt">misma hora que otra cita</em>' : ''}</small></span></li>`; }).join('')}</ul></div>` : ''}
       <div class="toolbar"><div class="subfiltro rm-filtros" role="group" aria-label="Filtrar por estado">${F.map(([k, n, c]) => `<button data-fil="${k}" aria-pressed="${filtro === k}">${k ? `<i class="rm-dot" style="--rc:${COLOR[k]}"></i>` : ''}${n}<b>${c}</b></button>`).join('')}</div>
         <label class="search-in"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">Buscar</span><input id="rmQ" type="search" placeholder="Código, nombre, departamento…" value="${esc(q)}"></label></div>
-      <div id="rmLista">${!l.length ? `<div class="card empty-card"><p><b>No hay personas en la campaña ${anio}.</b></p><p class="muted">Entran solas las personas de alta en ${P.reconocimientos.centros.join(', ')} durante el año.</p></div>`
+      <div id="rmLista">${!l.length ? `<div class="card empty-card"><p><b>No hay personas en la campaña ${anio}.</b></p><p class="muted">Entran solas las personas de alta en los centros marcados arriba («Personal de»). Marca el centro de oficina tal como figura en tu base de empleados.</p></div>`
         : vis.length ? `<ul class="rm-list">${vis.map(fila).join('')}</ul>` : '<p class="muted">Nadie en este estado.</p>'}</div>
       <details class="card rm-cfg"><summary><b>Lugares y textos de los correos</b><span class="muted small">${lugares().length ? `${lugares().length} lugar${lugares().length === 1 ? '' : 'es'}` : 'Aún no hay lugares'}</span></summary><div id="rmCfg"></div></details>
       ${Calc.legal('Base legal y privacidad', `<p><b>Art. 22 de la Ley 31/1995 de PRL:</b> la vigilancia de la salud es voluntaria (salvo los supuestos del art. 22.1, que conviene revisar con el servicio de prevención), confidencial y la empresa solo conoce la conclusión de aptitud. Si alguien la rechaza, es recomendable que lo deje por escrito: la plataforma genera el escrito de renuncia.</p>
@@ -87,10 +97,10 @@ const ModReconocimientos = (() => {
 
   function fila(e) {
     const r = reg(e), st = M().estado(r), c = r.cita || {}, lg = lugar(c.lugarId);
-    const info = st === 'pendiente' ? 'Sin comunicar' : st === 'comunicado' ? `Comunicado el ${Fecha.corta(Fecha.parse(r.comunicado))}` : st === 'acepta' ? `Acepta${r.respuestaEl ? ' el ' + Fecha.corta(Fecha.parse(r.respuestaEl)) : ''} · falta la cita`
+    const info = st === 'pendiente' ? 'Campaña sin comunicar' : st === 'comunicado' ? `Comunicado el ${Fecha.corta(Fecha.parse(r.comunicado))} · esperando respuesta` : st === 'acepta' ? `Acepta${r.respuestaEl ? ' el ' + Fecha.corta(Fecha.parse(r.respuestaEl)) : ''} · falta la cita`
       : st === 'citado' ? `${Fecha.diaSemana(Fecha.parse(c.fecha)).slice(0, 3)} ${Fecha.corta(Fecha.parse(c.fecha))}${c.hora ? ' · ' + c.hora + ' h' : ''}${lg ? ' · ' + esc(lg.nombre) : ''}${r.citaEnviada ? ' · cita enviada' : ' · <em class="late-txt">cita sin enviar</em>'}`
       : st === 'realizado' ? `Realizado el ${Fecha.corta(Fecha.parse(r.realizado))}` : `Rechaza${r.renunciaFirmada ? ' · renuncia firmada' : ' · <em class="late-txt">falta la renuncia firmada</em>'}`;
-    const A = { pendiente: [['comunicar', 'Comunicar']], comunicado: [['acepta', 'Acepta'], ['rechaza', 'Rechaza']], acepta: [['citar', 'Citar']],
+    const A = { pendiente: [['acepta', 'Acepta'], ['rechaza', 'Rechaza']], comunicado: [['acepta', 'Acepta'], ['rechaza', 'Rechaza']], acepta: [['citar', 'Citar']],
       citado: [['enviar', r.citaEnviada ? 'Reenviar cita' : 'Enviar cita'], ['realizado', 'Realizado']], rechaza: [['renuncia', 'Renuncia']], realizado: [] }[st];
     return `<li class="rm-row" data-e="${e.id}" style="--rc:${COLOR[st]}">
       <button class="rm-main" data-det><span class="avatar">${esc(((e.nombre || '?')[0] + (e.apellido1 || '')[0]).toUpperCase())}</span>
@@ -105,13 +115,17 @@ const ModReconocimientos = (() => {
     $$('.rm-avisos [data-f]', main).forEach(b => b.onclick = () => { filtro = b.dataset.f; render(main); });
     $('#rmQ', main).oninput = ev => { q = ev.target.value; const l = lista(), vis = l.filter(e => (!filtro || M().estado(reg(e)) === filtro) && (!q || norm(`${e.codigo} ${e.nombreCompleto} ${e.departamento || ''} ${e.puesto || ''}`).includes(norm(q)))); $('#rmLista', main).innerHTML = vis.length ? `<ul class="rm-list">${vis.map(fila).join('')}</ul>` : '<p class="muted">Nadie coincide.</p>'; };
     $('#rmCom', main).onclick = () => comunicar(main);
+    $$('[data-centro]', main).forEach(b => b.onclick = () => {
+      const todos = MotorEmpleados.valores(Empleados.todos(), 'centro'), sel = new Set(todos.filter(c => incluye({ centro: c })));
+      sel.has(b.dataset.centro) ? sel.delete(b.dataset.centro) : sel.add(b.dataset.centro);
+      Datos.set('rmCentros', [...sel]); sincronizar(); render(main);
+    });
     $('#rmLista', main).onclick = async ev => {
       const li = ev.target.closest('[data-e]'); if (!li) return;
       const e = Empleados.buscar(Number(li.dataset.e)); if (!e) return;
       if (ev.target.closest('[data-det]')) { detalle(main, e); return; }
       const a = ev.target.closest('[data-a]')?.dataset.a; if (!a) return;
-      if (a === 'comunicar') { if (!e.email) { toast(`${e.nombreCompleto} no tiene correo: añádelo en su ficha`); return; } abrirCorreo(M().correoComunicacion({ e, anio, cfg: cfg(), empresa: P.empresa, nombre: nombreDe })); await guardar(e.id, { comunicado: hoyISO() }); toast('Correo abierto y marcado como comunicado'); render(main); }
-      else if (a === 'acepta' || a === 'rechaza') { await guardar(e.id, { respuesta: a, respuestaEl: hoyISO() }); toast(a === 'acepta' ? 'Acepta: ahora, cítale' : 'Rechaza: genera el escrito de renuncia para que lo firme'); render(main); }
+      if (a === 'acepta' || a === 'rechaza') { await guardar(e.id, { respuesta: a, respuestaEl: hoyISO() }); toast(a === 'acepta' ? 'Acepta: ahora, cítale' : 'Rechaza: genera el escrito de renuncia para que lo firme'); render(main); }
       else if (a === 'citar') citar(main, e);
       else if (a === 'enviar') enviarCita(main, e);
       else if (a === 'realizado') { await guardar(e.id, { realizado: reg(e).cita?.fecha && reg(e).cita.fecha <= hoyISO() ? reg(e).cita.fecha : hoyISO() }); Ficus.decir('Uno más con su reconocimiento hecho.', 'yay'); render(main); }
@@ -119,23 +133,24 @@ const ModReconocimientos = (() => {
     };
   }
 
-  /* Comunicar a todos los pendientes: un correo con copia oculta (o uno por persona) y marcar como comunicado. */
+  /* Comunicación masiva de la campaña: un correo con todo el personal en copia oculta y una única fecha para todos. */
   function comunicar(main) {
-    const pend = lista().filter(e => M().estado(reg(e)) === 'pendiente'), con = pend.filter(e => e.email), sin = pend.filter(e => !e.email);
+    const l = lista(), con = l.filter(e => e.email), sin = l.filter(e => !e.email), com = campana().comunicado || '';
     const c = M().correoComunicacion({ anio, cfg: cfg(), empresa: P.empresa, nombre: nombreDe });
     const d = abrirModal(`<div class="dlg-b"><h2 style="font-size:20px;font-weight:600;margin:0">Comunicar la campaña ${anio}</h2>
-      <p class="muted" style="margin:0">${pend.length} persona${pend.length === 1 ? '' : 's'} por comunicar${sin.length ? ` · <b class="late-txt">${sin.length} sin correo</b> (${sin.map(e => esc(e.nombreCompleto)).join(', ')}): añádelo en su ficha o comunícaselo a mano` : ''}.</p>
-      <div class="mail-body" style="max-height:38vh">${esc(c.texto)}</div>
+      <p class="muted" style="margin:0">Un solo correo a las ${l.length} personas de la campaña, en copia oculta.${sin.length ? ` <b class="late-txt">${sin.length} sin correo</b> (${sin.map(e => esc(e.nombreCompleto)).join(', ')}): añádelo en su ficha o reenvíaselo a mano.` : ''}</p>
+      <div class="mail-body" style="max-height:34vh">${esc(c.texto)}</div>
       <div class="doc-acts"><button class="btn" id="rcTodos" ${con.length ? '' : 'disabled'}>${icon('documentos')}Abrir el correo con ${con.length} en copia oculta</button><button class="btn ghost" id="rcDir" ${con.length ? '' : 'disabled'}>Copiar direcciones</button><button class="btn ghost" id="rcTxt">Copiar texto</button></div>
-      <label class="check"><input type="checkbox" id="rcMarca" checked> Marcar como comunicadas hoy (${Fecha.corta(Fecha.hoy())}) a las ${pend.length} personas</label>
-    </div><div class="dlg-f"><button class="btn ghost" id="rcX">Cerrar</button><button class="btn" id="rcOk">Hecho</button></div>`, { ancho: 640 });
+      <div class="field" style="margin:0"><label for="rcF">Fecha de comunicación (para todas las personas)</label><input type="date" id="rcF" value="${com || hoyISO()}"></div>
+    </div><div class="dlg-f">${com ? '<button class="btn ghost danger" id="rcQ" style="margin-right:auto">Quitar la fecha</button>' : ''}<button class="btn ghost" id="rcX">Cerrar</button><button class="btn" id="rcOk">Guardar la fecha</button></div>`, { ancho: 640 });
     $('#rcTodos', d).onclick = () => abrirCorreo({ cco: con.map(e => e.email), asunto: c.asunto, texto: c.texto });
     $('#rcDir', d).onclick = () => copiar(con.map(e => e.email).join('; '), 'Direcciones copiadas: pégalas en «CCO» de Outlook');
     $('#rcTxt', d).onclick = () => copiar(c.texto, 'Texto copiado');
     $('#rcX', d).onclick = () => d.close('cancel');
-    $('#rcOk', d).onclick = async () => {
-      if ($('#rcMarca', d).checked) for (const e of pend) await guardar(e.id, { comunicado: hoyISO() });
-      d.close('ok'); toast($('#rcMarca', d).checked ? `${pend.length} marcadas como comunicadas` : 'Sin cambios'); render(main);
+    $('#rcQ', d) && ($('#rcQ', d).onclick = () => { setCampana({ comunicado: '' }); sincronizar(); d.close('ok'); render(main); toast('Fecha de comunicación quitada'); });
+    $('#rcOk', d).onclick = () => {
+      const fch = $('#rcF', d).value; if (!fch) { toast('Indica la fecha'); return; }
+      setCampana({ comunicado: fch }); sincronizar(); d.close('ok'); toast(`Campaña ${anio} comunicada el ${Fecha.corta(Fecha.parse(fch))}`); render(main);
     };
   }
 
@@ -187,7 +202,7 @@ const ModReconocimientos = (() => {
     const r = reg(e), c = r.cita || {}, L = lugares();
     const d = abrirModal(`<form id="rdF" novalidate><div class="dlg-b"><h2 style="font-size:20px;font-weight:600;margin:0">${esc(e.nombreCompleto)} · ${anio}</h2>
       <p class="muted" style="margin:0">${esc([e.codigo, e.puesto, e.centro].filter(Boolean).join(' · '))} · ${e.email ? esc(e.email) : '<span class="late-txt">sin correo en su ficha</span>'}</p>
-      <div class="row2"><div class="field"><label for="rdC">Comunicado el</label><input type="date" id="rdC" value="${r.comunicado || ''}"></div>
+      <div class="row2"><div class="field"><label for="rdC">Comunicado aparte <span class="muted" style="font-weight:400">(si no, la fecha de la campaña)</span></label><input type="date" id="rdC" value="${(e.reconocimientos || {})[anio]?.comunicado || ''}" placeholder="${esc(campana().comunicado || '')}"></div>
         <div class="field"><label for="rdR">Respuesta</label><select id="rdR"><option value="">Sin respuesta</option><option value="acepta" ${r.respuesta === 'acepta' ? 'selected' : ''}>Acepta</option><option value="rechaza" ${r.respuesta === 'rechaza' ? 'selected' : ''}>Rechaza</option></select></div></div>
       <div class="row2"><div class="field"><label for="rdD">Cita: fecha</label><input type="date" id="rdD" value="${c.fecha || ''}"></div><div class="field"><label for="rdH">Hora</label><input type="time" id="rdH" value="${c.hora || ''}"></div></div>
       <div class="row2"><div class="field"><label for="rdL">Lugar</label><select id="rdL"><option value="">—</option>${L.map(x => `<option value="${x.id}" ${x.id === c.lugarId ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select></div>

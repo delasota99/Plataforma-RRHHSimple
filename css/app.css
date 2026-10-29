@@ -1608,3 +1608,6 @@ main:not([data-anim]) :is(.cae-vis,.cae-emp){animation:none}
 .rm-lug input{padding:8px 10px;border-radius:10px;border:1.5px solid var(--border-strong);background:var(--bg);font-size:14px;min-width:0}
 .rm-doc{white-space:pre-wrap;max-height:46vh;font-size:14px}
 @media (max-width:820px){.rm-row{grid-template-columns:1fr}.rm-acts{justify-content:flex-start}.rm-lug li{grid-template-columns:1fr}.rm-tot{margin-left:0}}
+.rm-centros{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:12px}
+.rm-centros .chip-f{padding:5px 10px;font-size:12.5px}
+.rm-centros .chip-f b{font-weight:600}
