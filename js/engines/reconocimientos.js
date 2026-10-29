@@ -2,7 +2,7 @@
  * Motor de reconocimientos médicos (campaña anual) — funciones puras.
  * La comunicación es masiva: una fecha por campaña (comunicado), que vale para todas las personas.
  * Registro por persona y año (dentro de la ficha cifrada): empleado.reconocimientos[anio] =
- *   { comunicado: 'AAAA-MM-DD' (solo si se comunicó aparte), respuesta: 'acepta'|'rechaza'|'', respuestaEl, renunciaFirmada,
+ *   { incluido: true (añadida a mano), excluido: true (quitada a mano), comunicado: 'AAAA-MM-DD' (solo si se comunicó aparte), respuesta: 'acepta'|'rechaza'|'', respuestaEl, renunciaFirmada,
  *     cita: { fecha, hora, lugarId }, citaEnviada: 'AAAA-MM-DD', realizado: 'AAAA-MM-DD' }
  * Nunca se guardan resultados ni datos de salud.
  * Base legal: art. 22 de la Ley 31/1995 de PRL (voluntaria; confidencial; la empresa solo conoce la aptitud).
@@ -32,11 +32,14 @@
   function participantes(empleados, anio, incluye, hoy = `${anio}-01-01`) {
     const fin = `${anio}-12-31`, ref = hoy < fin ? (hoy > `${anio}-01-01` ? hoy : `${anio}-01-01`) : fin;
     const enCentro = typeof incluye === 'function' ? incluye : e => incluye.includes(e.centro);
-    return empleados.filter(e => (e.reconocimientos && e.reconocimientos[anio]) ||
-      (enCentro(e) && (!e.fechaContratacion || e.fechaContratacion <= fin) && (!e.fechaBaja || e.fechaBaja >= ref)));
+    return empleados.filter(e => {
+      const r = e.reconocimientos && e.reconocimientos[anio];
+      if (r) return !r.excluido; // añadida a mano o con algo anotado: dentro; quitada a mano: fuera
+      return enCentro(e) && (!e.fechaContratacion || e.fechaContratacion <= fin) && (!e.fechaBaja || e.fechaBaja >= ref);
+    });
   }
-  /* Centro de oficina por defecto: el que contiene "oficina" (sin tildes ni mayúsculas). */
-  const esOficina = centro => /oficina/.test(String(centro || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
+  /* Centro de oficina por defecto: el que contiene "oficina", "remoto" o "teletrabajo" (sin tildes ni mayúsculas). */
+  const esOficina = centro => /oficina|remot|teletrab/.test(String(centro || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
 
   /* Recuento por estado. */
   function resumen(lista, anio, comunicado = '') {

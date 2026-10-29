@@ -27,6 +27,9 @@ ok('Campaña pasada: a fecha 31/12', ids(M.participantes(E, 2026, C.centros, '20
 ok('Baja futura (aún de alta hoy): sí entra', ids(M.participantes([{ ...E[2], fechaBaja: '2026-12-15' }], 2026, C.centros, '2026-10-29')) === '3');
 ok('Centro reconocido sin importar cómo se escribió', M.esOficina('OFICINA MADRID') && M.esOficina('Oficina (Madrid)') && !M.esOficina('Fábrica (Talavera)'));
 ok('Centros con función (p. ej. "Oficina" a secas)', ids(M.participantes([{ ...E[0], centro: 'Oficina' }], 2026, e => M.esOficina(e.centro), '2026-10-29')) === '1');
+ok('Remoto y teletrabajo cuentan como oficina', M.esOficina('Remoto') && M.esOficina('Teletrabajo (Valencia)'));
+ok('Añadida a mano (otro centro): entra', ids(M.participantes([{ ...E[1], reconocimientos: { 2026: { incluido: true } } }], 2026, C.centros, '2026-10-29')) === '2');
+ok('Quitada a mano (oficina): no entra', ids(M.participantes([{ ...E[0], reconocimientos: { 2026: { excluido: true } } }], 2026, C.centros, '2026-10-29')) === '');
 
 /* Resumen y seguimiento */
 const L = [

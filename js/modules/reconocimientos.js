@@ -85,7 +85,8 @@ const ModReconocimientos = (() => {
       </div>` : ''}
       ${s.proximas.length ? `<div class="card rm-agenda"><div class="card-h"><h3>Próximas citas</h3><span class="ex">${s.proximas.length}</span></div><ul>${s.proximas.slice(0, 6).map(e => { const c = reg(e).cita; return `<li><span class="rc-d"><b>${Number(c.fecha.slice(8))}</b><small>${Fecha.mesCorto(Fecha.parse(c.fecha))}</small></span><span><b>${esc(e.nombreCompleto)}</b><small>${c.hora ? c.hora + ' h · ' : ''}${esc(lugar(c.lugarId)?.nombre || 'Lugar sin indicar')}${sol.has(e.id) ? ' · <em class="late-txt">misma hora que otra cita</em>' : ''}</small></span></li>`; }).join('')}</ul></div>` : ''}
       <div class="toolbar"><div class="subfiltro rm-filtros" role="group" aria-label="Filtrar por estado">${F.map(([k, n, c]) => `<button data-fil="${k}" aria-pressed="${filtro === k}">${k ? `<i class="rm-dot" style="--rc:${COLOR[k]}"></i>` : ''}${n}<b>${c}</b></button>`).join('')}</div>
-        <label class="search-in"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">Buscar</span><input id="rmQ" type="search" placeholder="Código, nombre, departamento…" value="${esc(q)}"></label></div>
+        <label class="search-in"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="sr">Buscar</span><input id="rmQ" type="search" placeholder="Código, nombre, departamento…" value="${esc(q)}"></label>
+        <button class="btn ghost sm" id="rmAdd"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Añadir persona</button></div>
       <div id="rmLista">${!l.length ? `<div class="card empty-card"><p><b>No hay personas en la campaña ${anio}.</b></p><p class="muted">Entran solas las personas de alta en los centros marcados arriba («Personal de»). Marca el centro de oficina tal como figura en tu base de empleados.</p></div>`
         : vis.length ? `<ul class="rm-list">${vis.map(fila).join('')}</ul>` : '<p class="muted">Nadie en este estado.</p>'}</div>
       <details class="card rm-cfg"><summary><b>Lugares y textos de los correos</b><span class="muted small">${lugares().length ? `${lugares().length} lugar${lugares().length === 1 ? '' : 'es'}` : 'Aún no hay lugares'}</span></summary><div id="rmCfg"></div></details>
@@ -104,7 +105,7 @@ const ModReconocimientos = (() => {
       citado: [['enviar', r.citaEnviada ? 'Reenviar cita' : 'Enviar cita'], ['realizado', 'Realizado']], rechaza: [['renuncia', 'Renuncia']], realizado: [] }[st];
     return `<li class="rm-row" data-e="${e.id}" style="--rc:${COLOR[st]}">
       <button class="rm-main" data-det><span class="avatar">${esc(((e.nombre || '?')[0] + (e.apellido1 || '')[0]).toUpperCase())}</span>
-        <span class="rm-t"><b><em>${esc(e.codigo || '')}</em>${esc(e.nombreCompleto)}</b><small>${esc([e.puesto, e.departamento].filter(Boolean).join(' · ') || 'Sin puesto')}${e.email ? '' : ' · <em class="late-txt">sin correo</em>'}</small></span></button>
+        <span class="rm-t"><b><em>${esc(e.codigo || '')}</em>${esc(e.nombreCompleto)}</b><small>${esc([e.puesto, e.departamento, e.centro].filter(Boolean).join(' · ') || 'Sin puesto')}${r.incluido ? ' · añadida a mano' : ''}${e.email ? '' : ' · <em class="late-txt">sin correo</em>'}</small></span></button>
       <span class="rm-st"><span class="rm-chip">${M().NOMBRE[st]}</span><small>${info}</small></span>
       <span class="rm-acts">${A.map(([k, n], i) => `<button class="btn sm ${i === 0 && k !== 'rechaza' ? '' : 'ghost'}" data-a="${k}">${n}</button>`).join('')}</span></li>`;
   }
@@ -115,6 +116,7 @@ const ModReconocimientos = (() => {
     $$('.rm-avisos [data-f]', main).forEach(b => b.onclick = () => { filtro = b.dataset.f; render(main); });
     $('#rmQ', main).oninput = ev => { q = ev.target.value; const l = lista(), vis = l.filter(e => (!filtro || M().estado(reg(e)) === filtro) && (!q || norm(`${e.codigo} ${e.nombreCompleto} ${e.departamento || ''} ${e.puesto || ''}`).includes(norm(q)))); $('#rmLista', main).innerHTML = vis.length ? `<ul class="rm-list">${vis.map(fila).join('')}</ul>` : '<p class="muted">Nadie coincide.</p>'; };
     $('#rmCom', main).onclick = () => comunicar(main);
+    $('#rmAdd', main).onclick = () => anadir(main);
     $$('[data-centro]', main).forEach(b => b.onclick = () => {
       const todos = MotorEmpleados.valores(Empleados.todos(), 'centro'), sel = new Set(todos.filter(c => incluye({ centro: c })));
       sel.has(b.dataset.centro) ? sel.delete(b.dataset.centro) : sel.add(b.dataset.centro);
@@ -198,6 +200,22 @@ const ModReconocimientos = (() => {
   }
 
   /* Detalle: todas las fechas editables (para corregir). */
+  /* Añadir a mano a quien no entra por su centro (p. ej. teletrabajo con otro centro en la ficha). */
+  function anadir(main) {
+    const dentro = new Set(lista().map(e => e.id)), hoy = hoyISO();
+    const fuera = Empleados.todos().filter(e => !dentro.has(e.id) && (!e.fechaBaja || e.fechaBaja >= hoy)).map(e => e.id);
+    const d = abrirModal(`<form id="raF" novalidate><div class="dlg-b"><h2 style="font-size:20px;font-weight:600;margin:0">Añadir a la campaña ${anio}</h2>
+      <p class="muted" style="margin:0">Para personas que no entran por su centro (por ejemplo, quien teletrabaja y figura en otro centro). Solo afecta a reconocimientos.</p>
+      ${SelPersona.campo('raE', 'Persona', { ids: fuera, bajas: false })}
+    </div><div class="dlg-f"><button type="button" class="btn ghost" id="raX">Cancelar</button><button class="btn">Añadir</button></div></form>`, { ancho: 520 });
+    SelPersona.enlazar(d);
+    $('#raX', d).onclick = () => d.close('cancel');
+    $('#raF', d).onsubmit = async ev => {
+      ev.preventDefault(); const id = Number($('#raE', d).value); if (!id) { toast('Elige una persona'); return; }
+      await guardar(id, { incluido: true, excluido: false }); d.close('ok'); toast(`${Empleados.buscar(id).nombreCompleto} añadida a la campaña ${anio}`); render(main);
+    };
+  }
+
   function detalle(main, e) {
     const r = reg(e), c = r.cita || {}, L = lugares();
     const d = abrirModal(`<form id="rdF" novalidate><div class="dlg-b"><h2 style="font-size:20px;font-weight:600;margin:0">${esc(e.nombreCompleto)} · ${anio}</h2>
@@ -207,9 +225,11 @@ const ModReconocimientos = (() => {
       <div class="row2"><div class="field"><label for="rdD">Cita: fecha</label><input type="date" id="rdD" value="${c.fecha || ''}"></div><div class="field"><label for="rdH">Hora</label><input type="time" id="rdH" value="${c.hora || ''}"></div></div>
       <div class="row2"><div class="field"><label for="rdL">Lugar</label><select id="rdL"><option value="">—</option>${L.map(x => `<option value="${x.id}" ${x.id === c.lugarId ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select></div>
         <div class="field"><label for="rdE">Realizado el</label><input type="date" id="rdE" value="${r.realizado || ''}"></div></div>
+      <p class="muted small" style="margin:0">«Quitar de la campaña» es para quien no debe estar aunque sea de oficina; «Empezar de cero» borra lo anotado este año.</p>
       <p class="muted small" style="margin:0">No anotes aquí resultados ni motivos de salud: solo fechas y estado.</p>
-    </div><div class="dlg-f"><button type="button" class="btn ghost danger" id="rdB" style="margin-right:auto">Empezar de cero este año</button><button type="button" class="btn ghost" id="rdX">Cancelar</button><button class="btn">Guardar</button></div></form>`, { ancho: 600 });
+    </div><div class="dlg-f"><button type="button" class="btn ghost danger" id="rdB" style="margin-right:auto">Empezar de cero este año</button><button type="button" class="btn ghost" id="rdQ">Quitar de la campaña</button><button type="button" class="btn ghost" id="rdX">Cancelar</button><button class="btn">Guardar</button></div></form>`, { ancho: 600 });
     $('#rdX', d).onclick = () => d.close('cancel');
+    $('#rdQ', d).onclick = async () => { await guardar(e.id, { excluido: true, incluido: false }); d.close('ok'); toast(`${e.nombreCompleto} quitada de la campaña ${anio}`); render(main); };
     $('#rdB', d).onclick = async ev => { const b = ev.currentTarget; if (!b.dataset.ok) { b.dataset.ok = 1; b.textContent = 'Pulsa otra vez para borrar su registro de ' + anio; return; } const x = Empleados.buscar(e.id), todos = { ...(x.reconocimientos || {}) }; delete todos[anio]; await Empleados.editarEmpleado(e.id, { reconocimientos: todos }); sincronizar(); d.close('ok'); render(main); };
     $('#rdF', d).onsubmit = async ev => {
       ev.preventDefault();
